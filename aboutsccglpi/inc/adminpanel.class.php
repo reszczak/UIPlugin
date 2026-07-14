@@ -1,36 +1,98 @@
 <?php
 /**
- * Config panel: edit form + save handling for the documentation record.
+ * Config panel: home page form, subpages list, subpage add/edit form, and
+ * POST handling for all of the above.
  */
+
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
 class PluginAboutsccglpiAdminPanel
 {
     public function run(): void
     {
-        $doc = PluginAboutsccglpiDocumentation::getSingleton();
-        $this->handlePost($doc);
+        $this->handlePost();
+
+        $tab = (($_GET['tab'] ?? '') === 'subpages') ? 'subpages' : 'home';
 
         Html::header(PluginAboutsccglpiMenu::getMenuName(), $_SERVER['PHP_SELF'], 'config', 'plugins');
 
-        $this->render(PluginAboutsccglpiDocumentation::getSingleton());
+        echo "<div class='aboutsccglpi-config'>";
+        $this->renderTabs($tab);
+
+        if ($tab === 'subpages') {
+            $this->renderSubpagesTab();
+        } else {
+            $this->renderHomeTab(PluginAboutsccglpiDocumentation::getHome());
+        }
+
+        echo "</div>";
+        echo $this->styles();
 
         Html::footer();
     }
 
     /* ------------------------------ POST ------------------------------- */
 
-    private function handlePost(PluginAboutsccglpiDocumentation $doc): void
+    private function handlePost(): void
     {
-        if (!isset($_POST['update'])) {
-            return;
+        $self = PluginAboutsccglpiHtmlHelper::selfUrl();
+        $doc  = new PluginAboutsccglpiDocumentation();
+
+        if (isset($_POST['update'])) {
+            $doc->saveHome((string) ($_POST['name'] ?? ''), (string) ($_POST['content'] ?? ''));
+            Session::addMessageAfterRedirect(PluginAboutsccglpiHtmlHelper::t('Documentation saved successfully.'), true, INFO);
+            Html::redirect($self . '?tab=home');
         }
-        $doc->saveContent((string) ($_POST['name'] ?? ''), (string) ($_POST['content'] ?? ''));
-        Session::addMessageAfterRedirect(PluginAboutsccglpiHtmlHelper::t('Documentation saved successfully.'), true, INFO);
-        Html::back();
+
+        if (isset($_POST['add_subpage'])) {
+            $id = $doc->addSubpage((string) ($_POST['name'] ?? ''), (string) ($_POST['content'] ?? ''));
+            if ($id > 0) {
+                Session::addMessageAfterRedirect(PluginAboutsccglpiHtmlHelper::t('Subpage added.'), true, INFO);
+            } else {
+                Session::addMessageAfterRedirect(PluginAboutsccglpiHtmlHelper::t('Page title is required.'), true, ERROR);
+            }
+            Html::redirect($self . '?tab=subpages');
+        }
+
+        if (isset($_POST['update_subpage'])) {
+            $id = (int) ($_POST['id'] ?? 0);
+            $ok = $doc->updateSubpage($id, (string) ($_POST['name'] ?? ''), (string) ($_POST['content'] ?? ''));
+            Session::addMessageAfterRedirect(
+                $ok ? PluginAboutsccglpiHtmlHelper::t('Subpage updated.') : PluginAboutsccglpiHtmlHelper::t('Page title is required.'),
+                true,
+                $ok ? INFO : ERROR
+            );
+            Html::redirect($self . '?tab=subpages');
+        }
+
+        if (isset($_POST['delete_subpage'])) {
+            $id = (int) ($_POST['id'] ?? 0);
+            $ok = $doc->deleteSubpage($id);
+            if ($ok) {
+                Session::addMessageAfterRedirect(PluginAboutsccglpiHtmlHelper::t('Subpage deleted.'), true, INFO);
+            }
+            Html::redirect($self . '?tab=subpages');
+        }
     }
 
-    /* ------------------------------ view ------------------------------- */
+    /* ------------------------------ tabs -------------------------------- */
 
-    private function render(PluginAboutsccglpiDocumentation $doc): void
+    private function renderTabs(string $active): void
+    {
+        $t    = fn(string $s) => PluginAboutsccglpiHtmlHelper::t($s);
+        $self = PluginAboutsccglpiHtmlHelper::selfUrl();
+
+        echo "<ul class='nav nav-tabs mb-3'>";
+        echo "<li class='nav-item'><a class='nav-link" . ($active === 'home' ? ' active' : '') . "' href='"
+            . htmlescape($self) . "?tab=home'>" . htmlescape($t('Home page')) . "</a></li>";
+        echo "<li class='nav-item'><a class='nav-link" . ($active === 'subpages' ? ' active' : '') . "' href='"
+            . htmlescape($self) . "?tab=subpages'>" . htmlescape($t('Subpages')) . "</a></li>";
+        echo "</ul>";
+    }
+
+    /* --------------------------- home tab -------------------------------- */
+
+    private function renderHomeTab(PluginAboutsccglpiDocumentation $doc): void
     {
         $t       = fn(string $s) => PluginAboutsccglpiHtmlHelper::t($s);
         $self    = PluginAboutsccglpiHtmlHelper::selfUrl();
@@ -39,7 +101,6 @@ class PluginAboutsccglpiAdminPanel
         $content = (string) ($doc->fields['content'] ?? '');
         $preview = $doc->getRenderedHtml();
 
-        echo "<div class='aboutsccglpi-config'>";
         echo "<form name='aboutsccglpi_config_form' method='post' action='" . htmlescape($self) . "'>";
         echo PluginAboutsccglpiHtmlHelper::csrfHidden();
         echo "<div class='card'>";
@@ -60,7 +121,6 @@ class PluginAboutsccglpiAdminPanel
         echo "</div>";
 
         echo "<div class='row'>";
-
         echo "<div class='col-lg-6 mb-3'>";
         echo "<label class='form-label d-flex align-items-center' for='oap-content'>";
         echo "<i class='ti ti-markdown me-1'></i> " . htmlescape($t('Documentation (Markdown)'));
@@ -69,30 +129,15 @@ class PluginAboutsccglpiAdminPanel
             . " style='font-family: var(--tblr-font-monospace, monospace); font-size: .875rem;'"
             . " placeholder='# Heading&#10;&#10;Paste your documentation here in Markdown format…'>"
             . htmlescape($content) . "</textarea>";
-        echo "<div class='form-hint mt-2'>";
-        echo htmlescape($t('Paste the content in Markdown format. Supported, among others:')) . " ";
-        echo "<code>#</code> " . htmlescape($t('headings')) . ", ";
-        echo "<code>**" . htmlescape($t('bold')) . "**</code>, <code>*" . htmlescape($t('italics')) . "*</code>, "
-            . "<code>- " . htmlescape($t('lists')) . "</code>, <code>[link](https://…)</code>, "
-            . "<code>`" . htmlescape($t('code')) . "`</code>, " . htmlescape($t('tables and quotes')) . " ";
-        echo "(" . htmlescape($t('GitHub Flavored Markdown')) . "). ";
-        echo htmlescape($t('The table of contents and heading anchors are generated automatically.'));
-        echo "</div>";
+        echo $this->markdownHint();
         echo "</div>";
 
         echo "<div class='col-lg-6 mb-3'>";
         echo "<label class='form-label d-flex align-items-center'>";
         echo "<i class='ti ti-eye me-1'></i> " . htmlescape($t('Preview (last saved)'));
         echo "</label>";
-        echo "<div class='border rounded p-3 aboutsccglpi-doc' style='height: 585px; overflow-y: auto;'>";
-        if (trim($preview) === '') {
-            echo "<div class='text-muted text-center py-5'>" . htmlescape($t('No content yet — paste Markdown and save.')) . "</div>";
-        } else {
-            echo "<div class='markdown-body'>{$preview}</div>";
-        }
+        echo $this->previewPane($preview);
         echo "</div>";
-        echo "</div>";
-
         echo "</div>"; // row
         echo "</div>"; // card-body
 
@@ -104,9 +149,173 @@ class PluginAboutsccglpiAdminPanel
 
         echo "</div>"; // card
         echo "</form>";
-        echo "</div>"; // aboutsccglpi-config
+    }
 
-        echo $this->styles();
+    /* ------------------------- subpages tab ------------------------------ */
+
+    private function renderSubpagesTab(): void
+    {
+        $edit = $_GET['edit'] ?? null;
+
+        if ($edit !== null) {
+            $this->renderSubpageForm($edit === 'new' ? null : (int) $edit);
+            return;
+        }
+
+        $this->renderSubpagesList();
+    }
+
+    private function renderSubpagesList(): void
+    {
+        $t     = fn(string $s) => PluginAboutsccglpiHtmlHelper::t($s);
+        $self  = PluginAboutsccglpiHtmlHelper::selfUrl();
+        $pages = PluginAboutsccglpiDocumentation::getSubpages();
+
+        echo "<div class='card'>";
+        echo "<div class='card-header d-flex align-items-center'>";
+        echo "<h2 class='card-title mb-0'>" . htmlescape($t('Subpages')) . "</h2>";
+        echo "<a href='" . htmlescape($self) . "?tab=subpages&edit=new' class='btn btn-sm btn-primary ms-auto'>";
+        echo "<i class='ti ti-plus'></i> " . htmlescape($t('Add subpage'));
+        echo "</a>";
+        echo "</div>";
+
+        echo "<div class='card-body'>";
+        if (empty($pages)) {
+            echo "<div class='text-muted text-center py-5'>" . htmlescape($t('No subpages yet.')) . "</div>";
+        } else {
+            echo "<table class='table table-hover'>";
+            echo "<thead><tr><th>" . htmlescape($t('Title')) . "</th><th>" . htmlescape($t('Last modified'))
+                . "</th><th class='text-end'>" . htmlescape($t('Actions')) . "</th></tr></thead><tbody>";
+            foreach ($pages as $page) {
+                $id      = (int) $page['id'];
+                $editUrl = $self . '?tab=subpages&edit=' . $id;
+
+                echo "<tr>";
+                echo "<td>" . htmlescape($page['name']) . "</td>";
+                echo "<td class='text-muted'>" . htmlescape(Html::convDateTime($page['date_mod'])) . "</td>";
+                echo "<td class='text-end'>";
+                echo "<a href='" . htmlescape(PluginAboutsccglpiHtmlHelper::pageUrl($id)) . "' class='btn btn-sm btn-outline-secondary' target='_blank'>"
+                    . "<i class='ti ti-external-link'></i></a> ";
+                echo "<button type='button' class='btn btn-sm btn-outline-secondary aboutsccglpi-copy-link' data-copy-url='"
+                    . htmlescape(PluginAboutsccglpiHtmlHelper::pageUrlAbsolute($id)) . "' title='" . htmlescape($t('Copy link')) . "'>"
+                    . "<i class='ti ti-link'></i></button> ";
+                echo "<a href='" . htmlescape($editUrl) . "' class='btn btn-sm btn-outline-primary'>" . _x('button', 'Edit') . "</a> ";
+                echo "<form method='post' action='" . htmlescape($self) . "' class='d-inline'"
+                    . " onsubmit='return confirm(" . htmlescape(json_encode($t('Delete this subpage?'))) . ");'>";
+                echo PluginAboutsccglpiHtmlHelper::csrfHidden();
+                echo Html::hidden('id', ['value' => $id]);
+                echo "<button type='submit' name='delete_subpage' class='btn btn-sm btn-outline-danger'>"
+                    . _x('button', 'Delete permanently') . "</button>";
+                echo "</form>";
+                echo "</td>";
+                echo "</tr>";
+            }
+            echo "</tbody></table>";
+        }
+        echo "</div>"; // card-body
+        echo "</div>"; // card
+    }
+
+    private function renderSubpageForm(?int $id): void
+    {
+        $t    = fn(string $s) => PluginAboutsccglpiHtmlHelper::t($s);
+        $self = PluginAboutsccglpiHtmlHelper::selfUrl();
+
+        $page = null;
+        if ($id !== null) {
+            $page = PluginAboutsccglpiDocumentation::getPage($id);
+            if ($page === null) {
+                throw new NotFoundHttpException();
+            }
+        }
+
+        $name    = $page ? (string) $page->fields['name'] : '';
+        $content = $page ? (string) $page->fields['content'] : '';
+        $preview = $page ? $page->getRenderedHtml() : '';
+        $action  = $page ? 'update_subpage' : 'add_subpage';
+
+        echo "<form method='post' action='" . htmlescape($self) . "'>";
+        echo PluginAboutsccglpiHtmlHelper::csrfHidden();
+        if ($page) {
+            echo Html::hidden('id', ['value' => $id]);
+        }
+        echo "<div class='card'>";
+
+        echo "<div class='card-header d-flex align-items-center'>";
+        echo "<h2 class='card-title mb-0'>" . htmlescape($page ? $t('Edit subpage') : $t('Add subpage')) . "</h2>";
+        echo "<a href='" . htmlescape($self) . "?tab=subpages' class='btn btn-sm btn-outline-secondary ms-auto'>"
+            . _x('button', 'Cancel') . "</a>";
+        echo "</div>";
+
+        echo "<div class='card-body'>";
+        echo "<div class='mb-3'>";
+        echo "<label class='form-label' for='oap-sub-name'>" . htmlescape($t('Title')) . "</label>";
+        echo "<input type='text' class='form-control' id='oap-sub-name' name='name' value='" . htmlescape($name) . "' required>";
+        echo "</div>";
+
+        echo "<div class='row'>";
+        echo "<div class='col-lg-6 mb-3'>";
+        echo "<label class='form-label d-flex align-items-center' for='oap-sub-content'>";
+        echo "<i class='ti ti-markdown me-1'></i> " . htmlescape($t('Documentation (Markdown)'));
+        echo "</label>";
+        echo "<textarea class='form-control' id='oap-sub-content' name='content' rows='24' spellcheck='false'"
+            . " style='font-family: var(--tblr-font-monospace, monospace); font-size: .875rem;'"
+            . " placeholder='# Heading&#10;&#10;Paste your documentation here in Markdown format…'>"
+            . htmlescape($content) . "</textarea>";
+        echo $this->markdownHint();
+        echo "</div>";
+
+        echo "<div class='col-lg-6 mb-3'>";
+        echo "<label class='form-label d-flex align-items-center'>";
+        echo "<i class='ti ti-eye me-1'></i> " . htmlescape($t('Preview (last saved)'));
+        echo "</label>";
+        echo $this->previewPane($preview);
+        echo "</div>";
+        echo "</div>"; // row
+        echo "</div>"; // card-body
+
+        echo "<div class='card-footer text-end'>";
+        echo "<button type='submit' name='{$action}' class='btn btn-primary'>";
+        echo "<i class='ti ti-device-floppy'></i> " . _x('button', 'Save');
+        echo "</button>";
+        echo "</div>";
+
+        echo "</div>"; // card
+        echo "</form>";
+    }
+
+    /* ------------------------------ shared -------------------------------- */
+
+    /** Markdown syntax hint block, shared between the home and subpage forms. */
+    private function markdownHint(): string
+    {
+        $t = fn(string $s) => PluginAboutsccglpiHtmlHelper::t($s);
+
+        $html  = "<div class='form-hint mt-2'>";
+        $html .= htmlescape($t('Paste the content in Markdown format. Supported, among others:')) . " ";
+        $html .= "<code>#</code> " . htmlescape($t('headings')) . ", ";
+        $html .= "<code>**" . htmlescape($t('bold')) . "**</code>, <code>*" . htmlescape($t('italics')) . "*</code>, "
+            . "<code>- " . htmlescape($t('lists')) . "</code>, <code>[link](https://…)</code>, "
+            . "<code>`" . htmlescape($t('code')) . "`</code>, " . htmlescape($t('tables and quotes')) . " ";
+        $html .= "(" . htmlescape($t('GitHub Flavored Markdown')) . "). ";
+        $html .= htmlescape($t('The table of contents and heading anchors are generated automatically.'));
+        $html .= "</div>";
+        return $html;
+    }
+
+    /** Rendered-preview pane, shared between the home and subpage forms. */
+    private function previewPane(string $preview): string
+    {
+        $t = fn(string $s) => PluginAboutsccglpiHtmlHelper::t($s);
+
+        $html = "<div class='border rounded p-3 aboutsccglpi-doc' style='height: 585px; overflow-y: auto;'>";
+        if (trim($preview) === '') {
+            $html .= "<div class='text-muted text-center py-5'>" . htmlescape($t('No content yet — paste Markdown and save.')) . "</div>";
+        } else {
+            $html .= "<div class='markdown-body'>{$preview}</div>";
+        }
+        $html .= "</div>";
+        return $html;
     }
 
     /** Typography for the preview pane. */

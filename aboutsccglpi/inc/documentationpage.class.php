@@ -1,11 +1,22 @@
 <?php
 /**
- * Public documentation page (read-only).
+ * Public documentation page (read-only). Renders the home page (id=1) or a
+ * subpage passed via ?id=X.
  */
+
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
 class PluginAboutsccglpiDocumentationPage
 {
     public function run(): void
     {
+        $id  = isset($_GET['id']) ? (int) $_GET['id'] : PluginAboutsccglpiDocumentation::HOME_ID;
+        $doc = PluginAboutsccglpiDocumentation::getPage($id);
+
+        if ($doc === null) {
+            throw new NotFoundHttpException();
+        }
+
         Html::header(
             PluginAboutsccglpiMenu::getMenuName(),
             $_SERVER['PHP_SELF'],
@@ -13,9 +24,8 @@ class PluginAboutsccglpiDocumentationPage
             PluginAboutsccglpiMenu::class
         );
 
-        $doc = PluginAboutsccglpiDocumentation::getSingleton();
-
         $this->render(
+            $id,
             (string) ($doc->fields['name'] ?? PluginAboutsccglpiMenu::getMenuName()),
             $doc->getRenderedHtml(),
             PluginAboutsccglpiDocumentation::canUpdatePages()
@@ -24,10 +34,10 @@ class PluginAboutsccglpiDocumentationPage
         Html::footer();
     }
 
-    private function render(string $title, string $content, bool $canConfig): void
+    private function render(int $id, string $title, string $content, bool $canConfig): void
     {
-        $t         = fn(string $s) => PluginAboutsccglpiHtmlHelper::t($s);
-        $configUrl = PluginAboutsccglpiHtmlHelper::selfUrl();
+        $t      = fn(string $s) => PluginAboutsccglpiHtmlHelper::t($s);
+        $isHome = $id === PluginAboutsccglpiDocumentation::HOME_ID;
 
         echo "<div class='aboutsccglpi-doc'>";
         echo "<div class='d-flex flex-wrap align-items-center gap-2 mb-4'>";
@@ -37,8 +47,19 @@ class PluginAboutsccglpiDocumentationPage
         echo "<div class='text-muted'>" . htmlescape($t('User guide and documentation')) . "</div>";
         echo "</div>";
 
+        if (!$isHome) {
+            echo "<a href='" . htmlescape(PluginAboutsccglpiHtmlHelper::pageUrl(PluginAboutsccglpiDocumentation::HOME_ID)) . "' class='btn btn-outline-secondary'>";
+            echo "<i class='ti ti-arrow-left'></i> " . htmlescape($t('Back to home page'));
+            echo "</a>";
+        }
+
+        echo "<button type='button' class='btn btn-outline-secondary aboutsccglpi-copy-link' data-copy-url='"
+            . htmlescape(PluginAboutsccglpiHtmlHelper::pageUrlAbsolute($id)) . "' title='" . htmlescape($t('Copy link')) . "'>";
+        echo "<i class='ti ti-link'></i> " . htmlescape($t('Copy link'));
+        echo "</button>";
+
         if ($canConfig) {
-            echo "<a href='" . htmlescape($configUrl) . "' class='btn btn-outline-secondary'>";
+            echo "<a href='" . htmlescape(PluginAboutsccglpiHtmlHelper::editUrl($id)) . "' class='btn btn-outline-secondary'>";
             echo "<i class='ti ti-settings'></i> " . htmlescape($t('Configure documentation'));
             echo "</a>";
         }
@@ -49,9 +70,9 @@ class PluginAboutsccglpiDocumentationPage
             echo "<div class='text-center text-muted py-5'>";
             echo "<i class='ti ti-file-off fs-1 d-block mb-2'></i>";
             echo htmlescape($t('No documentation.'));
-            if ($canConfig) {
+            if ($canConfig && $isHome) {
                 echo "<div class='mt-3'>";
-                echo "<a href='" . htmlescape($configUrl) . "' class='btn btn-primary'>";
+                echo "<a href='" . htmlescape(PluginAboutsccglpiHtmlHelper::editUrl($id)) . "' class='btn btn-primary'>";
                 echo "<i class='ti ti-settings'></i> " . htmlescape($t('Add documentation (Markdown)'));
                 echo "</a>";
                 echo "</div>";

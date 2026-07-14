@@ -1,0 +1,108 @@
+/*
+ * UI Customizer – live edit mode styles (edit-mode.js).
+ * --uic-* variables fall back to the GLPI Tabler palette.
+ */
+:root {
+    --uic-accent:        var(--tblr-primary, #2563eb);
+    --uic-accent-fg:     var(--tblr-white, #fff);
+    --uic-danger:        var(--tblr-danger, #dc2626);
+    --uic-danger-fg:     var(--tblr-white, #fff);
+    --uic-success:       var(--tblr-success, #16a34a);
+    --uic-muted:         var(--tblr-secondary, #64748b);
+    --uic-toolbar-bg:    var(--tblr-dark, #1e293b);
+    --uic-toolbar-fg:    var(--tblr-white, #fff);
+    --uic-editable-outline: #94a3b8;
+}
+
+.uic-editable {
+    outline: 1px dashed var(--uic-editable-outline);
+    outline-offset: 2px;
+    cursor: pointer !important;
+}
+
+.uic-editable:hover {
+    outline: 2px solid var(--uic-accent);
+}
+
+.uic-hidden {
+    opacity: .35;
+    outline: 2px solid var(--uic-danger) !important;
+    position: relative;
+}
+
+.uic-hidden::after {
+    content: '✕';
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--uic-danger);
+    color: var(--uic-danger-fg);
+    font: bold 11px/1.6 sans-serif;
+    width: 1.6em;
+    text-align: center;
+    border-radius: 0 0 0 4px;
+    z-index: 5;
+}
+
+#uic-toolbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100000;
+    background: var(--uic-toolbar-bg);
+    color: var(--uic-toolbar-fg);
+    padding: .5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    font: 14px/1.4 sans-serif;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, .35);
+}
+
+#uic-toolbar select {
+    color: #111;
+    padding: .2rem;
+    border-radius: 4px;
+}
+
+#uic-toolbar .uic-hint {
+    opacity: .8;
+}
+
+#uic-toolbar .uic-spacer {
+    flex: 1;
+}
+
+#uic-toolbar .uic-btn {
+    border: 0;
+    border-radius: 4px;
+    padding: .35rem .9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+#uic-toolbar .uic-save {
+    background: var(--uic-success);
+    color: var(--uic-accent-fg);
+}
+
+#uic-toolbar .uic-cancel {
+    background: var(--uic-muted);
+    color: var(--uic-accent-fg);
+}
+
+#uic-fab {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 99999;
+    background: var(--uic-accent);
+    color: var(--uic-accent-fg);
+    border: 0;
+    border-radius: 999px;
+    padding: .55rem .9rem;
+    font: bold 14px sans-serif;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+}

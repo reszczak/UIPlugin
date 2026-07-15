@@ -1,5 +1,6 @@
 /**
- * Rewrites the GLPI logo link to point to the documentation page.
+ * Redirects the GLPI logo, breadcrumb home link, and central dashboard
+ * to the documentation page.
  */
 (function () {
     'use strict';
@@ -9,10 +10,22 @@
         return root + '/plugins/aboutsccglpi/front/documentation.php';
     }
 
-    function rewriteLogo() {
+    function isCentralDashboard() {
+        var path = window.location.pathname;
+        var isCentralPath = path.indexOf('/front/central.php') !== -1 || path === '/Central';
+        // Excludes embedded dashboard links.
+        return isCentralPath && window.location.search.indexOf('embed=') === -1;
+    }
+
+    if (isCentralDashboard()) {
+        window.location.replace(targetUrl());
+        return;
+    }
+
+    function rewriteHomeLinks() {
         var url = targetUrl();
-        document.querySelectorAll('span.glpi-logo').forEach(function (span) {
-            var link = span.closest('a');
+        document.querySelectorAll('span.glpi-logo, i.ti-home-2').forEach(function (icon) {
+            var link = icon.closest('a');
             if (link) {
                 link.setAttribute('href', url);
             }
@@ -20,15 +33,15 @@
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', rewriteLogo);
+        document.addEventListener('DOMContentLoaded', rewriteHomeLinks);
     } else {
-        rewriteLogo();
+        rewriteHomeLinks();
     }
 
     document.addEventListener('click', function (event) {
-        var logo = event.target.closest ? event.target.closest('span.glpi-logo') : null;
-        if (logo) {
-            var link = logo.closest('a');
+        var target = event.target.closest ? event.target.closest('span.glpi-logo, i.ti-home-2') : null;
+        if (target) {
+            var link = target.closest('a');
             if (link && link.getAttribute('href') !== targetUrl()) {
                 event.preventDefault();
                 window.location.href = targetUrl();
@@ -36,22 +49,62 @@
         }
     }, true);
 
+    /** Copies text via a hidden textarea and document.execCommand('copy'). */
+    function legacyCopy(text) {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        var ok = false;
+        try {
+            ok = document.execCommand('copy');
+        } catch (e) {
+            ok = false;
+        }
+        document.body.removeChild(textarea);
+        return ok;
+    }
+
+    /** Copies text to the clipboard, falling back to legacyCopy(). */
+    function copyText(text) {
+        if (window.isSecureContext && navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text).catch(function () {
+                return legacyCopy(text);
+            });
+        }
+        return Promise.resolve(legacyCopy(text));
+    }
+
     document.addEventListener('click', function (event) {
         var btn = event.target.closest ? event.target.closest('.aboutsccglpi-copy-link') : null;
-        if (!btn || !navigator.clipboard || !navigator.clipboard.writeText) {
+        if (!btn) {
             return;
         }
         event.preventDefault();
-        navigator.clipboard.writeText(btn.getAttribute('data-copy-url') || '').then(function () {
+        var url = btn.getAttribute('data-copy-url') || '';
+        copyText(url).then(function (result) {
             var icon = btn.querySelector('i');
             if (!icon) {
                 return;
             }
             var original = icon.className;
-            icon.className = 'ti ti-check';
+            var originalTitle = btn.getAttribute('title');
+            if (result === false) {
+                // Shows the link in the tooltip for manual copying.
+                icon.className = 'ti ti-alert-triangle';
+                btn.setAttribute('title', url);
+            } else {
+                icon.className = 'ti ti-check';
+            }
             setTimeout(function () {
                 icon.className = original;
-            }, 1500);
+                if (originalTitle !== null) {
+                    btn.setAttribute('title', originalTitle);
+                }
+            }, result === false ? 4000 : 1500);
         });
     });
 })();

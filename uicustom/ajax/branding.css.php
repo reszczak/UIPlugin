@@ -37,7 +37,9 @@ if ($settings->hasLogo()) {
 
 echo "}\n";
 
-if ($settings->hideFindMenu()) {
+$context = new PluginUicustomContext(new PluginUicustomProfileConfigRepository());
+$activeMenuCfg = $context->activeConfig()['menu'] ?? [];
+if (!empty($activeMenuCfg['hide_find_menu'])) {
     echo ".trigger-fuzzy { display: none !important; }\n";
 }
 

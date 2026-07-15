@@ -59,9 +59,11 @@
     /* ---------------------------- fields ----------------------------- */
 
     function applyOneField(field, rule) {
+        var name = dom.fieldName(field);
+        if (!name) return false;
         var list = Array.isArray(rule.list) ? rule.list : [];
         var isKeep = (rule.mode || 'keep') === 'keep';
-        var inList = list.indexOf(dom.fieldName(field)) !== -1;
+        var inList = list.indexOf(name) !== -1;
         var shouldHide = isKeep ? !inList : inList;
         if (shouldHide && field.style.display !== 'none') {
             field.style.setProperty('display', 'none', 'important');
@@ -89,14 +91,14 @@
 
         // Fields inside a form[action].
         Object.keys(fields).forEach(function (action) {
-            document.querySelectorAll('form[action*="' + action + '"] [data-testid^="' + dom.TESTID_PREFIX + '"]')
+            document.querySelectorAll('form[action*="' + action + '"] ' + dom.FIELD_ROW_SELECTOR)
                 .forEach(function (el) { if (applyOneField(el, fields[action])) changed = true; });
         });
 
         // Fields outside any form[action] (read-only profiles).
         var orphans = [];
-        document.querySelectorAll('[data-testid^="' + dom.TESTID_PREFIX + '"]').forEach(function (el) {
-            if (!el.closest('form[action]')) orphans.push(el);
+        document.querySelectorAll(dom.FIELD_ROW_SELECTOR).forEach(function (el) {
+            if (dom.fieldName(el) && !el.closest('form[action]')) orphans.push(el);
         });
         if (!orphans.length) return changed;
 

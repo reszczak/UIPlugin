@@ -52,7 +52,6 @@ class PluginUicustomAdminPanel
         if (isset($_POST['save_branding'])) {
             $settings = new PluginUicustomBrandingSettings();
             $settings->save($_POST);
-            $settings->saveHideFindMenu(isset($_POST['hide_find_menu']));
             if (!empty($_FILES['logo']['name'])) {
                 try {
                     $settings->saveLogo($_FILES['logo']);
@@ -200,10 +199,6 @@ class PluginUicustomAdminPanel
         }
         echo "</div>";
 
-        echo "<h6 class='mt-4'>" . htmlescape($t('Interface')) . "</h6>";
-        echo "<p class='text-muted small'>" . htmlescape($t('Instance-wide, applies to every logged-in user regardless of profile rule.')) . "</p>";
-        echo PluginUicustomHtmlHelper::checkbox('hide_find_menu', $settings->hideFindMenu(), $t('Hide the "Find menu" button (fuzzy search, Ctrl+Alt+G)'));
-
         echo "<div class='mt-3 d-flex justify-content-between'>";
         echo "<button type='submit' name='reset_branding' value='1' class='btn btn-outline-secondary'>" . htmlescape($t('Reset to native GLPI colors')) . "</button>";
         echo "<button type='submit' name='save_branding' value='1' class='btn btn-primary'>" . htmlescape($t('Save branding')) . "</button>";
@@ -301,11 +296,17 @@ class PluginUicustomAdminPanel
         return empty($parts) ? $t('empty (full view)') : implode(' · ', $parts);
     }
 
+    /** All profiles, minus those with the config UPDATE right. */
     private function allProfiles(): array
     {
+        $adminIds = PluginUicustomProfileConfigRepository::adminProfileIds();
         $out = [];
         foreach ((new Profile())->find([], ['name']) as $row) {
-            $out[(int) $row['id']] = $row['name'];
+            $id = (int) $row['id'];
+            if (isset($adminIds[$id])) {
+                continue;
+            }
+            $out[$id] = $row['name'];
         }
         return $out;
     }

@@ -92,14 +92,16 @@
 
     function markFields(root) {
         (root.querySelectorAll ? root : document)
-            .querySelectorAll('[data-testid^="' + dom.TESTID_PREFIX + '"]').forEach(function (el) {
+            .querySelectorAll(dom.FIELD_ROW_SELECTOR).forEach(function (el) {
                 var form = el.closest('form');
                 var action = form ? dom.formActionKey(form) : null;
                 if (!action) return;
+                var name = dom.fieldName(el);
+                if (!name) return;
                 if (!el.classList.contains('uic-editable')) {
                     el.classList.add('uic-editable');
                     el.dataset.uicAction = action;
-                    if (ruleHidesField(action, dom.fieldName(el))) el.classList.add('uic-hidden');
+                    if (ruleHidesField(action, name)) el.classList.add('uic-hidden');
                 }
             });
     }
@@ -219,7 +221,7 @@
         if (!active) return;
         if (e.target.closest('#uic-toolbar') || e.target.closest('#uic-fab')) return;
 
-        var field = e.target.closest('[data-testid^="' + dom.TESTID_PREFIX + '"].uic-editable');
+        var field = e.target.closest(dom.FIELD_ROW_SELECTOR + '.uic-editable');
         if (field) {
             e.preventDefault(); e.stopPropagation();
             field.classList.toggle('uic-hidden');
@@ -357,6 +359,16 @@
 
     /* ------------------------- toolbar/fab -------------------------- */
 
+    var LAST_PROFILE_KEY = 'uicustomLastEditProfile';
+
+    function rememberProfile(pid) {
+        try { localStorage.setItem(LAST_PROFILE_KEY, String(pid)); } catch (e) { /* storage unavailable */ }
+    }
+
+    function lastRememberedProfile() {
+        try { return parseInt(localStorage.getItem(LAST_PROFILE_KEY), 10); } catch (e) { return NaN; }
+    }
+
     function buildToolbar(profiles) {
         var bar = document.createElement('div');
         bar.id = 'uic-toolbar';
@@ -373,12 +385,21 @@
         document.body.appendChild(bar);
 
         var sel = bar.querySelector('#uic-profile');
-        var withRule = profiles.find(function (p) { return p.has_rule; });
-        if (withRule) sel.value = String(withRule.id);
+        // Defaults to the profile last used in edit mode on this browser.
+        var last = lastRememberedProfile();
+        var lastValid = profiles.some(function (p) { return p.id === last; });
+        if (lastValid) {
+            sel.value = String(last);
+        } else {
+            var withRule = profiles.find(function (p) { return p.has_rule; });
+            if (withRule) sel.value = String(withRule.id);
+        }
         targetPid = parseInt(sel.value, 10);
+        rememberProfile(targetPid);
 
         sel.addEventListener('change', function () {
             targetPid = parseInt(sel.value, 10);
+            rememberProfile(targetPid);
             reloadRule();
         });
         bar.querySelector('.uic-save').addEventListener('click', save);

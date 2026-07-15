@@ -5,7 +5,8 @@
     'use strict';
     if (!window.UIC || window.UIC.dom) return;
 
-    var TESTID_PREFIX = 'form-field-';
+    /** Selector for a field row: label + control, as rendered by GLPI's core form macro. */
+    var FIELD_ROW_SELECTOR = '.form-field';
 
     function forcetabKey(a) {
         var m = (a.getAttribute('href') || '').match(/forcetab=([^&]+)/);
@@ -24,8 +25,13 @@
         return null;
     }
 
-    function fieldName(el) {
-        return el.getAttribute('data-testid').slice(TESTID_PREFIX.length);
+    /** Name of a `.form-field` row's control (brackets stripped), or null if unnamed. */
+    function fieldName(row) {
+        var el = row.querySelector('[name]');
+        if (!el) return null;
+        var raw = el.getAttribute('name') || '';
+        raw = raw.replace(/\[\]$/, '');
+        return raw || null;
     }
 
     function formActionKey(form) {
@@ -34,7 +40,7 @@
     }
 
     window.UIC.dom = {
-        TESTID_PREFIX: TESTID_PREFIX,
+        FIELD_ROW_SELECTOR: FIELD_ROW_SELECTOR,
         forcetabKey: forcetabKey,
         detectTabType: detectTabType,
         fieldName: fieldName,

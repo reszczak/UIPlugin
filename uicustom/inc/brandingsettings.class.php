@@ -117,20 +117,6 @@ class PluginUicustomBrandingSettings
         Config::deleteConfigurationValues(self::CONTEXT, array_keys(self::CSS_VARS));
     }
 
-    /* ---------------------------- toggles --------------------------- */
-
-    /** Whether the "Find menu" button (fuzzy search) is hidden. */
-    public function hideFindMenu(): bool
-    {
-        $stored = Config::getConfigurationValues(self::CONTEXT, ['hide_find_menu']);
-        return !empty($stored['hide_find_menu']);
-    }
-
-    public function saveHideFindMenu(bool $hide): void
-    {
-        Config::setConfigurationValues(self::CONTEXT, ['hide_find_menu' => $hide ? '1' : '0']);
-    }
-
     public static function isValidHexColor(string $v): bool
     {
         return (bool) preg_match('/^#[0-9a-fA-F]{6}$/', $v);

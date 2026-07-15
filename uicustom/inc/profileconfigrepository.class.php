@@ -72,6 +72,23 @@ class PluginUicustomProfileConfigRepository
         $this->db->delete(PLUGIN_UICUSTOM_TABLE, ['profiles_id' => $profilesId]);
     }
 
+    /**
+     * IDs of profiles with the config UPDATE right.
+     *
+     * @return array<int,true>
+     */
+    public static function adminProfileIds(): array
+    {
+        global $DB;
+        $out = [];
+        foreach ($DB->request(['FROM' => 'glpi_profilerights', 'WHERE' => ['name' => 'config']]) as $row) {
+            if (((int) $row['rights'] & UPDATE) === UPDATE) {
+                $out[(int) $row['profiles_id']] = true;
+            }
+        }
+        return $out;
+    }
+
     /** All configured profiles: [profiles_id => ['is_active' => bool]]. */
     public function allMeta(): array
     {

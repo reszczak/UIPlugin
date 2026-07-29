@@ -33,8 +33,26 @@ function plugin_init_uicustom(): void
     $registry = (new PluginUicustomAssetRegistry())->collect($context);
     $registry->applyToHooks($PLUGIN_HOOKS);
 
-    // Do not register add_css_anonymous_page -> ajax/branding.css.php: it
-    // breaks the login form's CSRF token.
+    // Public FAQ page (front/helpdesk.faq.php, reachable without login): apply
+    // the same branding (colors + logo) as the logged-in UI. This is scoped
+    // strictly to that one URL rather than registering add_css_anonymous_page
+    // unconditionally, because that hook also fires on the login page (same
+    // anonymous layout template) and loading this CSS there was found to
+    // break the login form's CSRF token.
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
+    if (str_ends_with($requestPath, '/front/helpdesk.faq.php')) {
+        $PLUGIN_HOOKS['add_css_anonymous_page']['uicustom'] = ['ajax/branding.css.php'];
+    }
+
+    // The GLPI firewall requires a session for plugin front/ajax scripts by
+    // default. branding.css.php and logo.php serve nothing user-specific
+    // (just the configured brand colors/logo), so they must be reachable
+    // without login for the FAQ page above to render them.
+    Glpi\Http\Firewall::addPluginStrategyForLegacyScripts(
+        'uicustom',
+        '#^/ajax/(branding\.css\.php|logo\.php)$#',
+        Glpi\Http\Firewall::STRATEGY_NO_CHECK
+    );
 }
 
 function plugin_version_uicustom(): array

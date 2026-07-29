@@ -43,6 +43,10 @@ if (!empty($activeMenuCfg['hide_find_menu'])) {
     echo ".trigger-fuzzy { display: none !important; }\n";
 }
 
+if (!empty($activeMenuCfg['hide_my_settings'])) {
+    echo "a[href$='/front/preference.php'] { display: none !important; }\n";
+}
+
 if ($settings->hasLogo()) {
     echo ".glpi-logo { background-size: contain !important; background-position: center !important; }\n";
 }

@@ -29,6 +29,7 @@ return [
     'Hide whole' => 'Ukryj cały',
     'Keep only these items (empty = all)' => 'Zostaw tylko te pozycje (puste = wszystkie)',
     'Hide all dashboard links' => 'Ukryj wszystkie linki Dashboard',
+    'Hide the "My settings" button (user menu)' => 'Ukryj przycisk „Moje ustawienia” (menu użytkownika)',
 
     // Branding (colors, logo, interface).
     'Branding' => 'Branding',

@@ -13,10 +13,11 @@ class PluginUicustomMenuTweak implements PluginUicustomPanelConfigurableTweakInt
     public function getDefaultConfig(): array
     {
         return [
-            'hidden_sectors'  => [],
-            'sector_keep'     => [],
-            'hide_dashboards' => false,
-            'hide_find_menu'  => false,
+            'hidden_sectors'   => [],
+            'sector_keep'      => [],
+            'hide_dashboards'  => false,
+            'hide_find_menu'   => false,
+            'hide_my_settings' => false,
         ];
     }
 
@@ -64,6 +65,7 @@ class PluginUicustomMenuTweak implements PluginUicustomPanelConfigurableTweakInt
         $curKeep    = $tweakConfig['sector_keep'] ?? [];
         $curHideDash = !empty($tweakConfig['hide_dashboards']);
         $curHideFindMenu = !empty($tweakConfig['hide_find_menu']);
+        $curHideMySettings = !empty($tweakConfig['hide_my_settings']);
         $self = PluginUicustomHtmlHelper::selfUrl();
 
         $html  = "<form method='post' action='" . htmlescape($self) . "'>";
@@ -94,6 +96,7 @@ class PluginUicustomMenuTweak implements PluginUicustomPanelConfigurableTweakInt
         $html .= "</tbody></table>";
         $html .= "<div class='mb-2'>" . PluginUicustomHtmlHelper::checkbox('hide_dashboards', $curHideDash, $t('Hide all dashboard links')) . "</div>";
         $html .= "<div class='mb-2'>" . PluginUicustomHtmlHelper::checkbox('hide_find_menu', $curHideFindMenu, $t('Hide the "Find menu" button (fuzzy search, Ctrl+Alt+G)')) . "</div>";
+        $html .= "<div class='mb-2'>" . PluginUicustomHtmlHelper::checkbox('hide_my_settings', $curHideMySettings, $t('Hide the "My settings" button (user menu)')) . "</div>";
         $html .= "<div class='d-flex justify-content-end'>";
         $html .= "<button type='submit' name='" . $this->getProfileSaveButtonName() . "' value='1' class='btn btn-primary'>" . htmlescape($t('Save menu')) . "</button>";
         $html .= "</div>";
@@ -116,10 +119,11 @@ class PluginUicustomMenuTweak implements PluginUicustomPanelConfigurableTweakInt
         }
 
         return [
-            'hidden_sectors'  => $hidden,
-            'sector_keep'     => $sectorKeep,
-            'hide_dashboards' => isset($post['hide_dashboards']),
-            'hide_find_menu'  => isset($post['hide_find_menu']),
+            'hidden_sectors'   => $hidden,
+            'sector_keep'      => $sectorKeep,
+            'hide_dashboards'  => isset($post['hide_dashboards']),
+            'hide_find_menu'   => isset($post['hide_find_menu']),
+            'hide_my_settings' => isset($post['hide_my_settings']),
         ];
     }
 }

@@ -1,6 +1,7 @@
 /**
  * Redirects the GLPI logo, breadcrumb home link, and central dashboard
- * to the documentation page.
+ * to the documentation page. Also redirects the user menu "Help" link
+ * to GLPI's own FAQ/knowledge base, which is reachable even when logged out.
  */
 (function () {
     'use strict';
@@ -8,6 +9,11 @@
     function targetUrl() {
         var root = (typeof CFG_GLPI !== 'undefined' && CFG_GLPI.root_doc) ? CFG_GLPI.root_doc : '';
         return root + '/plugins/aboutsccglpi/front/documentation.php';
+    }
+
+    function helpUrl() {
+        var root = (typeof CFG_GLPI !== 'undefined' && CFG_GLPI.root_doc) ? CFG_GLPI.root_doc : '';
+        return root + '/front/helpdesk.faq.php';
     }
 
     function isCentralDashboard() {
@@ -32,10 +38,24 @@
         });
     }
 
+    function rewriteHelpLink() {
+        var url = helpUrl();
+        document.querySelectorAll('i.ti-help').forEach(function (icon) {
+            var link = icon.closest('a');
+            if (link) {
+                link.setAttribute('href', url);
+            }
+        });
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', rewriteHomeLinks);
+        document.addEventListener('DOMContentLoaded', function () {
+            rewriteHomeLinks();
+            rewriteHelpLink();
+        });
     } else {
         rewriteHomeLinks();
+        rewriteHelpLink();
     }
 
     document.addEventListener('click', function (event) {
@@ -45,6 +65,17 @@
             if (link && link.getAttribute('href') !== targetUrl()) {
                 event.preventDefault();
                 window.location.href = targetUrl();
+            }
+        }
+    }, true);
+
+    document.addEventListener('click', function (event) {
+        var target = event.target.closest ? event.target.closest('i.ti-help') : null;
+        if (target) {
+            var link = target.closest('a');
+            if (link && link.getAttribute('href') !== helpUrl()) {
+                event.preventDefault();
+                window.location.href = helpUrl();
             }
         }
     }, true);

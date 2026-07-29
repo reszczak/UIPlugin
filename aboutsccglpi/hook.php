@@ -42,12 +42,7 @@ function plugin_aboutsccglpi_install() {
 }
 
 function plugin_aboutsccglpi_uninstall() {
-    global $DB;
-
-    $table = PluginAboutsccglpiDocumentation::getTable();
-    if ($DB->tableExists($table)) {
-        $DB->doQuery("DROP TABLE `$table`");
-    }
-
+    // Table is intentionally kept: it holds hand-written documentation
+    // content, which should survive an uninstall/reinstall cycle.
     return true;
 }

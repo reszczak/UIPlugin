@@ -28,6 +28,9 @@ return [
     'Sector' => 'Sektor',
     'Hide whole' => 'Ukryj cały',
     'Keep only these items (empty = all)' => 'Zostaw tylko te pozycje (puste = wszystkie)',
+    'Self-service sidebar (FAQ, ticket submission...)' => 'Pasek boczny portalu (FAQ, zgłaszanie zgłoszeń...)',
+    'Shown on the helpdesk pages (e.g. front/helpdesk.faq.php); a different menu from the one above.'
+        => 'Widoczny na stronach portalu (np. front/helpdesk.faq.php); to inne menu niż to powyżej.',
     'Hide all dashboard links' => 'Ukryj wszystkie linki Dashboard',
     'Hide the "My settings" button (user menu)' => 'Ukryj przycisk „Moje ustawienia” (menu użytkownika)',
 

@@ -13,11 +13,12 @@ class PluginUicustomMenuTweak implements PluginUicustomPanelConfigurableTweakInt
     public function getDefaultConfig(): array
     {
         return [
-            'hidden_sectors'   => [],
-            'sector_keep'      => [],
-            'hide_dashboards'  => false,
-            'hide_find_menu'   => false,
-            'hide_my_settings' => false,
+            'hidden_sectors'      => [],
+            'sector_keep'         => [],
+            'hidden_help_sectors' => [],
+            'hide_dashboards'     => false,
+            'hide_find_menu'      => false,
+            'hide_my_settings'    => false,
         ];
     }
 
@@ -45,7 +46,11 @@ class PluginUicustomMenuTweak implements PluginUicustomPanelConfigurableTweakInt
             }
         }
 
-        foreach ($tweakConfig['hidden_sectors'] ?? [] as $sector) {
+        $hiddenSectors = array_merge(
+            $tweakConfig['hidden_sectors'] ?? [],
+            $tweakConfig['hidden_help_sectors'] ?? []
+        );
+        foreach ($hiddenSectors as $sector) {
             unset($menu[$sector]);
         }
 
@@ -63,6 +68,8 @@ class PluginUicustomMenuTweak implements PluginUicustomPanelConfigurableTweakInt
         $sectorsCat = $catalog['sectors'] ?? [];
         $curHidden  = $tweakConfig['hidden_sectors'] ?? [];
         $curKeep    = $tweakConfig['sector_keep'] ?? [];
+        $helpCat        = $catalog['help_sectors'] ?? [];
+        $curHiddenHelp  = $tweakConfig['hidden_help_sectors'] ?? [];
         $curHideDash = !empty($tweakConfig['hide_dashboards']);
         $curHideFindMenu = !empty($tweakConfig['hide_find_menu']);
         $curHideMySettings = !empty($tweakConfig['hide_my_settings']);
@@ -94,6 +101,22 @@ class PluginUicustomMenuTweak implements PluginUicustomPanelConfigurableTweakInt
             $html .= "</td></tr>";
         }
         $html .= "</tbody></table>";
+
+        if (!empty($helpCat)) {
+            $html .= "<h5 class='mt-4'>" . htmlescape($t('Self-service sidebar (FAQ, ticket submission...)')) . "</h5>";
+            $html .= "<p class='text-muted small'>" . htmlescape($t('Shown on the helpdesk pages (e.g. front/helpdesk.faq.php); a different menu from the one above.')) . "</p>";
+            $html .= "<table class='table align-middle'><thead><tr>"
+                . "<th style='width:30%'>" . htmlescape($t('Sector')) . "</th>"
+                . "<th>" . htmlescape($t('Hide whole')) . "</th>"
+                . "</tr></thead><tbody>";
+            foreach ($helpCat as $skey => $sdata) {
+                $checked = in_array($skey, $curHiddenHelp, true) ? 'checked' : '';
+                $html .= "<tr><td>" . htmlescape($sdata['title']) . "</td>";
+                $html .= "<td><input type='checkbox' class='form-check-input' name='hidden_help_sectors[]' value='" . htmlescape($skey) . "' {$checked}></td></tr>";
+            }
+            $html .= "</tbody></table>";
+        }
+
         $html .= "<div class='mb-2'>" . PluginUicustomHtmlHelper::checkbox('hide_dashboards', $curHideDash, $t('Hide all dashboard links')) . "</div>";
         $html .= "<div class='mb-2'>" . PluginUicustomHtmlHelper::checkbox('hide_find_menu', $curHideFindMenu, $t('Hide the "Find menu" button (fuzzy search, Ctrl+Alt+G)')) . "</div>";
         $html .= "<div class='mb-2'>" . PluginUicustomHtmlHelper::checkbox('hide_my_settings', $curHideMySettings, $t('Hide the "My settings" button (user menu)')) . "</div>";
@@ -118,12 +141,16 @@ class PluginUicustomMenuTweak implements PluginUicustomPanelConfigurableTweakInt
             }
         }
 
+        $helpCat = $catalog['help_sectors'] ?? [];
+        $hiddenHelp = array_values(array_intersect(array_keys($helpCat), (array) ($post['hidden_help_sectors'] ?? [])));
+
         return [
-            'hidden_sectors'   => $hidden,
-            'sector_keep'      => $sectorKeep,
-            'hide_dashboards'  => isset($post['hide_dashboards']),
-            'hide_find_menu'   => isset($post['hide_find_menu']),
-            'hide_my_settings' => isset($post['hide_my_settings']),
+            'hidden_sectors'      => $hidden,
+            'sector_keep'         => $sectorKeep,
+            'hidden_help_sectors' => $hiddenHelp,
+            'hide_dashboards'     => isset($post['hide_dashboards']),
+            'hide_find_menu'      => isset($post['hide_find_menu']),
+            'hide_my_settings'    => isset($post['hide_my_settings']),
         ];
     }
 }

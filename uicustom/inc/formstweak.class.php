@@ -28,12 +28,16 @@ class PluginUicustomFormsTweak implements PluginUicustomTweakInterface
         return $menu;
     }
 
-    /** Whitelist for tab names and Device* class names. */
+    /**
+     * Whitelist for tab names and Device* class names. Tab names may carry a
+     * "$<n>" suffix (e.g. "KnowbaseItem$2") disambiguating same-class tabs -
+     * see listTabEntries() in uic-dom-utils.js. Device names never have one.
+     */
     public static function sanitizeTabsList(array $raw): array
     {
         $tabs = [];
         foreach ($raw as $tb) {
-            if (is_string($tb) && preg_match('/^[A-Za-z0-9_\\\\]+$/', $tb)) {
+            if (is_string($tb) && preg_match('/^[A-Za-z0-9_\\\\]+(\$[0-9]+)?$/', $tb)) {
                 $tabs[] = $tb;
             }
         }

@@ -4,7 +4,12 @@
  */
 class PluginUicustomMenuCatalog
 {
-    /** @return array{sectors: array<string, array{title:string, items: array<string,string>}>} */
+    /**
+     * @return array{
+     *   sectors: array<string, array{title:string, items: array<string,string>}>,
+     *   help_sectors: array<string, array{title:string}>
+     * }
+     */
     public static function build(): array
     {
         $menu    = Html::generateMenuSession(true);
@@ -30,6 +35,17 @@ class PluginUicustomMenuCatalog
             ];
         }
 
-        return ['sectors' => $sectors];
+        // Self-service sidebar (front/helpdesk.*.php), reflecting the admin's own session rights.
+        $helpSectors = [];
+        foreach (Html::generateHelpMenu() as $skey => $sdata) {
+            if (!is_array($sdata) || !isset($sdata['title'])) {
+                continue;
+            }
+            $helpSectors[$skey] = [
+                'title' => trim(strip_tags((string) $sdata['title'])),
+            ];
+        }
+
+        return ['sectors' => $sectors, 'help_sectors' => $helpSectors];
     }
 }

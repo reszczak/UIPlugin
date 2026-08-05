@@ -107,18 +107,13 @@
     }
 
     function markTabs() {
-        var ul = document.getElementById('tabspanel');
-        if (!ul) return;
-        ul.querySelectorAll('li.nav-item').forEach(function (li) {
-            var a = li.querySelector('a.nav-link[href*="forcetab="]');
-            if (!a) return;
-            var key = dom.forcetabKey(a);
-            var cls = key ? key.split('$')[0] : null;
-            if (!cls || key.endsWith('$main')) return;
+        dom.listTabEntries().forEach(function (e) {
+            if (e.key.endsWith('$main')) return;
+            var li = e.li;
             if (!li.classList.contains('uic-editable')) {
                 li.classList.add('uic-editable');
-                li.dataset.uicTab = cls;
-                if (ruleHidesTab(cls)) li.classList.add('uic-hidden');
+                li.dataset.uicTab = e.effectiveCls;
+                if (ruleHidesTab(e.effectiveCls)) li.classList.add('uic-hidden');
             }
         });
     }
@@ -277,14 +272,9 @@
 
         if (dirtyTabs) {
             var keep = [];
-            document.querySelectorAll('#tabspanel li.nav-item').forEach(function (li) {
-                var a = li.querySelector('a.nav-link[href*="forcetab="]');
-                if (!a) return;
-                var key = dom.forcetabKey(a);
-                var cls = key ? key.split('$')[0] : null;
-                if (!cls) return;
-                if (key.endsWith('$main') || !li.classList.contains('uic-hidden')) {
-                    if (keep.indexOf(cls) === -1) keep.push(cls);
+            dom.listTabEntries().forEach(function (e) {
+                if (e.key.endsWith('$main') || !e.li.classList.contains('uic-hidden')) {
+                    if (keep.indexOf(e.effectiveCls) === -1) keep.push(e.effectiveCls);
                 }
             });
             payload.tabs_keep = keep;

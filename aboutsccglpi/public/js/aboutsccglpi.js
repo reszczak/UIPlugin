@@ -1,7 +1,8 @@
 /**
- * Redirects the GLPI logo, breadcrumb home link, and central dashboard
- * to the documentation page. Also redirects the user menu "Help" link
- * to GLPI's own FAQ/knowledge base, which is reachable even when logged out.
+ * Redirects the GLPI logo, breadcrumb home link, helpdesk sidebar "Start"
+ * link, and central dashboard to the documentation page. Also redirects
+ * the user menu "Help" link to GLPI's own FAQ/knowledge base, which is
+ * reachable even when logged out.
  */
 (function () {
     'use strict';
@@ -30,7 +31,7 @@
 
     function rewriteHomeLinks() {
         var url = targetUrl();
-        document.querySelectorAll('span.glpi-logo, i.ti-home-2').forEach(function (icon) {
+        document.querySelectorAll('span.glpi-logo, i.ti-home-2, i.ti-home').forEach(function (icon) {
             var link = icon.closest('a');
             if (link) {
                 link.setAttribute('href', url);
@@ -59,7 +60,7 @@
     }
 
     document.addEventListener('click', function (event) {
-        var target = event.target.closest ? event.target.closest('span.glpi-logo, i.ti-home-2') : null;
+        var target = event.target.closest ? event.target.closest('span.glpi-logo, i.ti-home-2, i.ti-home') : null;
         if (target) {
             var link = target.closest('a');
             if (link && link.getAttribute('href') !== targetUrl()) {

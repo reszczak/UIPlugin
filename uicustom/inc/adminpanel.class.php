@@ -284,7 +284,7 @@ class PluginUicustomAdminPanel
         $t = fn(string $s) => PluginUicustomHtmlHelper::t($s);
         $parts = [];
         $menu = $cfg['menu'] ?? [];
-        $nHidden = count($menu['hidden_sectors'] ?? []);
+        $nHidden = count($menu['hidden_sectors'] ?? []) + count($menu['hidden_help_sectors'] ?? []);
         $nKeep   = count($menu['sector_keep'] ?? []);
         if ($nHidden > 0 || $nKeep > 0 || !empty($menu['hide_dashboards'])) {
             $parts[] = sprintf($t('menu: %d hidden, %d filtered'), $nHidden, $nKeep);

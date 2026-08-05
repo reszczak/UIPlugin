@@ -31,13 +31,9 @@
         var changed = false;
 
         if (Array.isArray(keep) && keep.length) {
-            ul.querySelectorAll('li.nav-item').forEach(function (li) {
-                var a = li.querySelector('a.nav-link[href*="forcetab="]');
-                if (!a) return;
-                var key = dom.forcetabKey(a);
-                var cls = key ? key.split('$')[0] : null;
-                if (cls && keep.indexOf(cls) === -1 && li.style.display !== 'none') {
-                    li.style.setProperty('display', 'none', 'important');
+            dom.listTabEntries().forEach(function (e) {
+                if (keep.indexOf(e.effectiveCls) === -1 && e.li.style.display !== 'none') {
+                    e.li.style.setProperty('display', 'none', 'important');
                     changed = true;
                 }
             });

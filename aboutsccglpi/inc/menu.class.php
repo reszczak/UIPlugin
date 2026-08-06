@@ -1,7 +1,5 @@
 <?php
-/**
- * Sidebar menu entry: "O Aplikacji".
- */
+
 class PluginAboutsccglpiMenu extends CommonGLPI
 {
     public static function getMenuName()

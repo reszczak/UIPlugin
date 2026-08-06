@@ -1,8 +1,4 @@
 <?php
-/**
- * Admin-only: profile list for the live edit mode toolbar.
- * Returns [{id, name, has_rule}].
- */
 
 Session::checkRight('config', UPDATE);
 header('Content-Type: application/json; charset=utf-8');

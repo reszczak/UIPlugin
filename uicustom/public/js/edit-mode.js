@@ -1,9 +1,3 @@
-/*
- * UI Customizer – live edit mode (fields + tabs + component groups + columns).
- * Admin-only. Shows a floating "✎ UI" button on object pages; picks a
- * target profile, click to toggle visible/hidden, "Save" merges the
- * composed fragment into the profile rule (ajax/save_rule.php).
- */
 (function () {
     'use strict';
 
@@ -45,14 +39,12 @@
     var dirtyColumns = false;
     var dirtyCleanup = false;
 
-    /* --------------------------- utils ------------------------------ */
 
     function csrf() {
         var i = document.querySelector('input[name="_glpi_csrf_token"]');
         return i ? i.value : '';
     }
 
-    /* ------------------------- rule lookups -------------------------- */
 
     function ruleHidesField(action, name) {
         var type = dom.detectTabType();
@@ -88,7 +80,6 @@
         return !!(c && c[flag]);
     }
 
-    /* --------------------------- marking ---------------------------- */
 
     function markFields(root) {
         (root.querySelectorAll ? root : document)
@@ -118,7 +109,6 @@
         });
     }
 
-    /** Marks a cleanup toggle element with a single boolean flag. */
     function markCleanupEl(el, flag) {
         if (!el || el.classList.contains('uic-editable')) return;
         el.classList.add('uic-editable');
@@ -136,12 +126,6 @@
         markDeviceActions();
     }
 
-    /**
-     * Marks each "Update"/"View" link in the Components tab with a shared
-     * group flag (data-uic-cleanup-group): one flag, many elements, toggled
-     * together (see onClick/composePayload). Scoped to the Components
-     * table so it doesn't match the "Elementy Karta SIM" menu link.
-     */
     function markDeviceActions() {
         var anchor = document.querySelector('tbody[id^="Device"]');
         var table = anchor ? anchor.closest('table') : null;
@@ -155,7 +139,6 @@
         });
     }
 
-    /** Marks component group headers (td.subheader with itemtype=Device* link) as click targets. */
     function markDevices(root) {
         (root.querySelectorAll ? root : document)
             .querySelectorAll('td.subheader a[href*="itemtype=Device"]').forEach(function (a) {
@@ -169,7 +152,6 @@
             });
     }
 
-    /** Marks list column headers (<th>) as click targets, keyed by tab class and logical column index. */
     function markColumns() {
         document.querySelectorAll('#tabspanel a[href*="forcetab="][data-bs-target]').forEach(function (link) {
             var m = (link.getAttribute('href') || '').match(/forcetab=([^$&]+)\$/);
@@ -210,7 +192,6 @@
         });
     }
 
-    /* --------------------------- click ------------------------------- */
 
     function onClick(e) {
         if (!active) return;
@@ -237,7 +218,6 @@
             dirtyCleanup = true;
             return;
         }
-        // Group flag: clicking any row toggles all elements sharing the group.
         var groupEl = e.target.closest('.uic-editable[data-uic-cleanup-group]');
         if (groupEl) {
             e.preventDefault(); e.stopPropagation();
@@ -264,7 +244,6 @@
         }
     }
 
-    /* --------------------------- save ------------------------------ */
 
     function composePayload() {
         var type = dom.detectTabType();
@@ -347,12 +326,11 @@
             .catch(function (e) { alert(T.error + e); });
     }
 
-    /* ------------------------- toolbar/fab -------------------------- */
 
     var LAST_PROFILE_KEY = 'uicustomLastEditProfile';
 
     function rememberProfile(pid) {
-        try { localStorage.setItem(LAST_PROFILE_KEY, String(pid)); } catch (e) { /* storage unavailable */ }
+        try { localStorage.setItem(LAST_PROFILE_KEY, String(pid)); } catch (e) {  }
     }
 
     function lastRememberedProfile() {
@@ -375,7 +353,6 @@
         document.body.appendChild(bar);
 
         var sel = bar.querySelector('#uic-profile');
-        // Defaults to the profile last used in edit mode on this browser.
         var last = lastRememberedProfile();
         var lastValid = profiles.some(function (p) { return p.id === last; });
         if (lastValid) {
@@ -460,7 +437,6 @@
         dirtyCleanup = false;
     }
 
-    /* ---------------------------- init ------------------------------ */
 
     function init() {
         if (window.__uicEditModeInit) return;

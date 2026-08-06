@@ -1,7 +1,4 @@
 <?php
-/**
- * Data access for glpi_plugin_uicustom_profileconfigs.
- */
 class PluginUicustomProfileConfigRepository
 {
     public function __construct(private ?\DBmysql $db = null)
@@ -21,7 +18,6 @@ class PluginUicustomProfileConfigRepository
         ];
     }
 
-    /** Profile's rule, or null if missing/inactive. */
     public function get(int $profilesId, bool $onlyActive = true): ?array
     {
         $raw = $this->fetchRow($profilesId);
@@ -34,7 +30,6 @@ class PluginUicustomProfileConfigRepository
         return $this->decode($raw['config']);
     }
 
-    /** Like get(), but ignores is_active. */
     public function getRaw(int $profilesId): ?array
     {
         $raw = $this->fetchRow($profilesId);
@@ -72,11 +67,6 @@ class PluginUicustomProfileConfigRepository
         $this->db->delete(PLUGIN_UICUSTOM_TABLE, ['profiles_id' => $profilesId]);
     }
 
-    /**
-     * IDs of profiles with the config UPDATE right.
-     *
-     * @return array<int,true>
-     */
     public static function adminProfileIds(): array
     {
         global $DB;
@@ -89,7 +79,6 @@ class PluginUicustomProfileConfigRepository
         return $out;
     }
 
-    /** All configured profiles: [profiles_id => ['is_active' => bool]]. */
     public function allMeta(): array
     {
         $out = [];

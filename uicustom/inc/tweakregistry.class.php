@@ -1,10 +1,6 @@
 <?php
-/**
- * Registry of all plugin tweaks.
- */
 class PluginUicustomTweakRegistry
 {
-    /** @var array<string,PluginUicustomTweakInterface> */
     private static array $tweaks = [];
     private static bool $booted = false;
 
@@ -13,7 +9,6 @@ class PluginUicustomTweakRegistry
         self::$tweaks[$tweak->getKey()] = $tweak;
     }
 
-    /** @return PluginUicustomTweakInterface[] */
     public static function all(): array
     {
         self::boot();

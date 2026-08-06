@@ -1,8 +1,4 @@
 <?php
-/**
- * Polish translations for the 'uicustom' domain (Laminas 'phparray' format).
- * Key = English source string, value = Polish translation.
- */
 return [
     'Configured profiles' => 'Skonfigurowane profile',
     'Rule' => 'Reguła',
@@ -34,7 +30,6 @@ return [
     'Hide all dashboard links' => 'Ukryj wszystkie linki Dashboard',
     'Hide the "My settings" button (user menu)' => 'Ukryj przycisk „Moje ustawienia” (menu użytkownika)',
 
-    // Branding (colors, logo, interface).
     'Branding' => 'Branding',
     'Company logo' => 'Logo firmy',
     'Replaces the GLPI logo in the header for logged-in users. PNG/JPEG/GIF/WebP, max 300 KB.'

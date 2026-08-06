@@ -1,8 +1,4 @@
 <?php
-/**
- * Public documentation page (read-only). Renders the home page (id=1) or a
- * subpage passed via ?id=X.
- */
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -87,7 +83,6 @@ class PluginAboutsccglpiDocumentationPage
         echo $this->styles();
     }
 
-    /** Typography for the rendered Markdown. */
     private function styles(): string
     {
         return <<<'CSS'

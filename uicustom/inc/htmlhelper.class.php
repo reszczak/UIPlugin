@@ -1,7 +1,4 @@
 <?php
-/**
- * Shared HTML helpers for the admin panel.
- */
 class PluginUicustomHtmlHelper
 {
     public static function checkbox(string $name, bool $checked, string $label): string
@@ -17,19 +14,16 @@ class PluginUicustomHtmlHelper
             . Html::hidden('profiles_id', ['value' => $profilesId]);
     }
 
-    /** Translated label in the 'uicustom' domain. */
     public static function t(string $s): string
     {
         return __($s, 'uicustom');
     }
 
-    /** Root-relative URL of the config panel. */
     public static function selfUrl(): string
     {
         return self::pluginDir() . 'front/config.form.php';
     }
 
-    /** Root-relative plugin directory, with trailing slash. */
     public static function pluginDir(): string
     {
         global $CFG_GLPI;

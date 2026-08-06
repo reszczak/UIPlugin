@@ -1,8 +1,4 @@
 <?php
-/**
- * Generates :root { --glpi-mainmenu-*; --glpi-logo-* } from branding settings.
- * Registered by AssetRegistry under add_css, for logged-in users only.
- */
 
 global $CFG_GLPI;
 

@@ -1,18 +1,3 @@
-/*
- * UI Customizer – applies the "forms" rule (tabs/fields/columns/cleanup)
- * of the active profile to the DOM. Loaded after uic-core.js and
- * uic-dom-utils.js, only for profiles with an active rule.
- *
- * forms = {
- *   "<itemtype>": {
- *     "tabs_keep": ["Computer", "Item_OperatingSystem", ...],
- *     "fields": { "computer.form.php": { "mode": "keep"|"hide", "list": [...] } },
- *     "devices_hide": ["DeviceNetworkCard", ...],
- *     "columns_hide": { "Item_SoftwareVersion": [2,4] },
- *     "cleanup": { "hide_qr": true, "hide_all_tab": true, "hide_device_actions": true }
- *   }
- * }
- */
 (function () {
     'use strict';
 
@@ -21,9 +6,7 @@
     var dom = UIC.dom;
     var FORMS = null;
 
-    /* ----------------------------- tabs ------------------------------ */
 
-    /** Hides tabs not in tabs_keep, and the "All" tab if cleanup.hide_all_tab. */
     function applyTabs(formCfg) {
         var ul = document.getElementById('tabspanel');
         if (!ul) return false;
@@ -52,7 +35,6 @@
         return changed;
     }
 
-    /* ---------------------------- fields ----------------------------- */
 
     function applyOneField(field, rule) {
         var name = dom.fieldName(field);
@@ -68,7 +50,6 @@
         return false;
     }
 
-    /** Picks the field-rule action whose field list overlaps most with `names`. */
     function bestActionFor(fields, names) {
         var best = null, bestScore = 0;
         Object.keys(fields).forEach(function (action) {
@@ -85,13 +66,11 @@
         if (!Object.keys(fields).length) return false;
         var changed = false;
 
-        // Fields inside a form[action].
         Object.keys(fields).forEach(function (action) {
             document.querySelectorAll('form[action*="' + action + '"] ' + dom.FIELD_ROW_SELECTOR)
                 .forEach(function (el) { if (applyOneField(el, fields[action])) changed = true; });
         });
 
-        // Fields outside any form[action] (read-only profiles).
         var orphans = [];
         document.querySelectorAll(dom.FIELD_ROW_SELECTOR).forEach(function (el) {
             if (dom.fieldName(el) && !el.closest('form[action]')) orphans.push(el);
@@ -106,14 +85,7 @@
         return changed;
     }
 
-    /* --------------------------- devices ----------------------------- */
 
-    /**
-     * Hides component groups in the Item_Devices tab. A group is a run of
-     * <tbody>: a header row (td.subheader), one <tbody id="<Class>_n_...">,
-     * then further row <tbody> elements. The device class comes from the
-     * id of that first <tbody>.
-     */
     function applyDevices(formCfg) {
         var hide = Array.isArray(formCfg.devices_hide) ? formCfg.devices_hide : [];
         if (!hide.length) return false;
@@ -147,9 +119,7 @@
         return changed;
     }
 
-    /* --------------------------- columns ----------------------------- */
 
-    /** Finds the list table of a given tab. */
     function findTabTable(tabCls) {
         var link = document.querySelector('#tabspanel a[href*="forcetab=' + tabCls + '$"]');
         var target = link ? link.getAttribute('data-bs-target') : null;
@@ -157,14 +127,12 @@
         return (pane || document).querySelector('table.table-hover, table.table-striped, table.tab_cadre_fixehov');
     }
 
-    /** True if the header row has a colspan>1 cell (grouped table, not a flat list). */
     function isGroupedHeader(headRow) {
         return Array.prototype.some.call(headRow.children, function (c) {
             return (parseInt(c.getAttribute('colspan'), 10) || 1) > 1;
         });
     }
 
-    /** Physical positions of data columns (skips the mass-action checkbox and filter columns). */
     function dataColPositions(headRow) {
         var phys = [];
         Array.prototype.forEach.call(headRow.children, function (cell, i) {
@@ -176,7 +144,6 @@
         return phys;
     }
 
-    /** Hides list columns per tab, by logical (language-independent) index. */
     function applyColumns(formCfg) {
         var map = formCfg.columns_hide;
         if (!map || typeof map !== 'object') return false;
@@ -203,7 +170,6 @@
         return changed;
     }
 
-    /* --------------------------- cleanup ----------------------------- */
 
     function applyCleanup(formCfg) {
         var c = formCfg.cleanup || {};
@@ -218,7 +184,6 @@
             });
         }
         if (c.hide_device_actions) {
-            // "Update"/"View" link in the Components tab, scoped to that table.
             var devAnchor = document.querySelector('tbody[id^="Device"]');
             var devTable = devAnchor ? devAnchor.closest('table') : null;
             if (devTable) {
@@ -233,9 +198,7 @@
         return changed;
     }
 
-    /* ----------------------------- run ------------------------------- */
 
-    /** Returns true if this pass changed anything (used by UIC.stabilize). */
     function apply() {
         if (!FORMS) return false;
         var type = dom.detectTabType();

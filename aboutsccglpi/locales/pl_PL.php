@@ -1,8 +1,5 @@
 <?php
-/**
- * Polish translations for the 'aboutsccglpi' domain (Laminas 'phparray' format).
- * Key = English source string, value = Polish translation.
- */
+
 return [
     'About the Application' => 'O Aplikacji',
     'Configuration — “About the Application” documentation' => 'Konfiguracja — dokumentacja „O Aplikacji”',

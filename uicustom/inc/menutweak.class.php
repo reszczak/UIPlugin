@@ -1,8 +1,4 @@
 <?php
-/**
- * Tweak "menu": hides menu sectors/items and dashboard links per profile.
- * Server-side only (redefine_menus hook), no JS/CSS assets.
- */
 class PluginUicustomMenuTweak implements PluginUicustomPanelConfigurableTweakInterface
 {
     public function getKey(): string

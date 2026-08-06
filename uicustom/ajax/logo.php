@@ -1,7 +1,4 @@
 <?php
-/**
- * Serves the uploaded company logo. No session required.
- */
 
 $logo = (new PluginUicustomBrandingSettings())->getLogo();
 if ($logo === null) {

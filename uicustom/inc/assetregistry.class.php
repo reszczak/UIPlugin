@@ -1,10 +1,6 @@
 <?php
-/**
- * Collects CSS/JS assets declared by tweaks and writes them to $PLUGIN_HOOKS.
- */
 class PluginUicustomAssetRegistry
 {
-    /** @var array<string,true> */
     private array $css = [];
     private array $js  = [];
 

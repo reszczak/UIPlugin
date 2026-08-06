@@ -1,9 +1,3 @@
-/**
- * Redirects the GLPI logo, breadcrumb home link, helpdesk sidebar "Start"
- * link, and central dashboard to the documentation page. Also redirects
- * the user menu "Help" link to GLPI's own FAQ/knowledge base, which is
- * reachable even when logged out.
- */
 (function () {
     'use strict';
 
@@ -20,7 +14,6 @@
     function isCentralDashboard() {
         var path = window.location.pathname;
         var isCentralPath = path.indexOf('/front/central.php') !== -1 || path === '/Central';
-        // Excludes embedded dashboard links.
         return isCentralPath && window.location.search.indexOf('embed=') === -1;
     }
 
@@ -81,7 +74,6 @@
         }
     }, true);
 
-    /** Copies text via a hidden textarea and document.execCommand('copy'). */
     function legacyCopy(text) {
         var textarea = document.createElement('textarea');
         textarea.value = text;
@@ -100,7 +92,6 @@
         return ok;
     }
 
-    /** Copies text to the clipboard, falling back to legacyCopy(). */
     function copyText(text) {
         if (window.isSecureContext && navigator.clipboard && navigator.clipboard.writeText) {
             return navigator.clipboard.writeText(text).catch(function () {
@@ -125,7 +116,6 @@
             var original = icon.className;
             var originalTitle = btn.getAttribute('title');
             if (result === false) {
-                // Shows the link in the tooltip for manual copying.
                 icon.className = 'ti ti-alert-triangle';
                 btn.setAttribute('title', url);
             } else {

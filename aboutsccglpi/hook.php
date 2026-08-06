@@ -1,7 +1,4 @@
 <?php
-/**
- * Plugin lifecycle: creates/maintains the documentation table.
- */
 
 function plugin_aboutsccglpi_install() {
     global $DB;
@@ -11,11 +8,6 @@ function plugin_aboutsccglpi_install() {
     $sign               = DBConnection::getDefaultPrimaryKeySignOption();
 
     $table = PluginAboutsccglpiDocumentation::getTable();
-
-    // Migrate data from the plugin's previous key/table name ("oaplikacji").
-    if (!$DB->tableExists($table) && $DB->tableExists('glpi_plugin_oaplikacji_documentations')) {
-        $DB->doQuery("RENAME TABLE `glpi_plugin_oaplikacji_documentations` TO `$table`");
-    }
 
     if (!$DB->tableExists($table)) {
         $query = "CREATE TABLE `$table` (
@@ -42,7 +34,5 @@ function plugin_aboutsccglpi_install() {
 }
 
 function plugin_aboutsccglpi_uninstall() {
-    // Table is intentionally kept: it holds hand-written documentation
-    // content, which should survive an uninstall/reinstall cycle.
     return true;
 }

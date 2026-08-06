@@ -1,7 +1,4 @@
 <?php
-/**
- * Request context: active profile id, config/UPDATE right, active profile's rule.
- */
 class PluginUicustomContext
 {
     private bool $configLoaded = false;
@@ -21,7 +18,6 @@ class PluginUicustomContext
         return (bool) ((int) ($_SESSION['glpiactiveprofile']['config'] ?? 0) & UPDATE);
     }
 
-    /** Active profile's rule, or null. */
     public function activeConfig(): ?array
     {
         if (!$this->configLoaded) {

@@ -1,8 +1,4 @@
 <?php
-/**
- * Tweak "forms": tabs and form fields per itemtype. Configured only in
- * live edit mode, not in the panel.
- */
 class PluginUicustomFormsTweak implements PluginUicustomTweakInterface
 {
     public function getKey(): string
@@ -28,11 +24,6 @@ class PluginUicustomFormsTweak implements PluginUicustomTweakInterface
         return $menu;
     }
 
-    /**
-     * Whitelist for tab names and Device* class names. Tab names may carry a
-     * "$<n>" suffix (e.g. "KnowbaseItem$2") disambiguating same-class tabs -
-     * see listTabEntries() in uic-dom-utils.js. Device names never have one.
-     */
     public static function sanitizeTabsList(array $raw): array
     {
         $tabs = [];
@@ -44,11 +35,6 @@ class PluginUicustomFormsTweak implements PluginUicustomTweakInterface
         return array_values(array_unique($tabs));
     }
 
-    /**
-     * Hidden columns map: { "<TabClass>": [column indexes] }.
-     *
-     * @return array<string,int[]>
-     */
     public static function sanitizeColumnsMap(array $raw): array
     {
         $out = [];
@@ -69,7 +55,6 @@ class PluginUicustomFormsTweak implements PluginUicustomTweakInterface
         return $out;
     }
 
-    /** @return array{mode:string,list:string[]}|null Null if the action fails the whitelist. */
     public static function sanitizeFieldRule(string $action, array $rule): ?array
     {
         if (!preg_match('/^[a-z0-9_]+\.form\.php$/i', $action)) {

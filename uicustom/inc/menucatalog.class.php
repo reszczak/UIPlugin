@@ -1,15 +1,6 @@
 <?php
-/**
- * Catalog of GLPI menu sectors and their items, for the admin panel.
- */
 class PluginUicustomMenuCatalog
 {
-    /**
-     * @return array{
-     *   sectors: array<string, array{title:string, items: array<string,string>}>,
-     *   help_sectors: array<string, array{title:string}>
-     * }
-     */
     public static function build(): array
     {
         $menu    = Html::generateMenuSession(true);
@@ -35,7 +26,6 @@ class PluginUicustomMenuCatalog
             ];
         }
 
-        // Self-service sidebar (front/helpdesk.*.php), reflecting the admin's own session rights.
         $helpSectors = [];
         foreach (Html::generateHelpMenu() as $skey => $sdata) {
             if (!is_array($sdata) || !isset($sdata['title'])) {

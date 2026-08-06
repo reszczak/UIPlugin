@@ -1,10 +1,4 @@
 <?php
-/**
- * Config panel dispatcher. Iterates PluginUicustomTweakRegistry::all() and
- * renders/handles POST for tweaks implementing
- * PluginUicustomPanelConfigurableTweakInterface. Handles is_active status
- * and rule deletion itself (not tweak-specific).
- */
 class PluginUicustomAdminPanel
 {
     private PluginUicustomProfileConfigRepository $repo;
@@ -36,7 +30,6 @@ class PluginUicustomAdminPanel
         Html::footer();
     }
 
-    /* ------------------------------ POST ------------------------------- */
 
     private function handlePost(string $self, array $catalog): void
     {
@@ -125,7 +118,6 @@ class PluginUicustomAdminPanel
         Html::redirect($self . '?profiles_id=' . $pid);
     }
 
-    /* ------------------------------ view ------------------------------- */
 
     private function renderProfilesList(string $self, array $allProfiles): void
     {
@@ -163,7 +155,6 @@ class PluginUicustomAdminPanel
         echo "</div></div></div>";
     }
 
-    /** Global branding section (colors + logo), independent of profiles. */
     private function renderBranding(string $self): void
     {
         $t = fn(string $s) => PluginUicustomHtmlHelper::t($s);
@@ -239,7 +230,6 @@ class PluginUicustomAdminPanel
         echo $this->renderLiveEditNote();
     }
 
-    /** Copies a whole rule from another configured profile. */
     private function renderCopyRule(int $pid, array $allProfiles): string
     {
         $t = fn(string $s) => PluginUicustomHtmlHelper::t($s);
@@ -267,7 +257,6 @@ class PluginUicustomAdminPanel
         return $html;
     }
 
-    /** Note that tabs/fields/columns are configured in live edit mode. */
     private function renderLiveEditNote(): string
     {
         $t = fn(string $s) => PluginUicustomHtmlHelper::t($s);
@@ -278,7 +267,6 @@ class PluginUicustomAdminPanel
         return $html;
     }
 
-    /** Short rule summary for the profiles list. */
     private function describeRule(array $cfg): string
     {
         $t = fn(string $s) => PluginUicustomHtmlHelper::t($s);
@@ -296,7 +284,6 @@ class PluginUicustomAdminPanel
         return empty($parts) ? $t('empty (full view)') : implode(' · ', $parts);
     }
 
-    /** All profiles, minus those with the config UPDATE right. */
     private function allProfiles(): array
     {
         $adminIds = PluginUicustomProfileConfigRepository::adminProfileIds();

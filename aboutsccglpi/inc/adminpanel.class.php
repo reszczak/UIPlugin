@@ -1,8 +1,4 @@
 <?php
-/**
- * Config panel: home page form, subpages list, subpage add/edit form, and
- * POST handling for all of the above.
- */
 
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -30,8 +26,6 @@ class PluginAboutsccglpiAdminPanel
 
         Html::footer();
     }
-
-    /* ------------------------------ POST ------------------------------- */
 
     private function handlePost(): void
     {
@@ -75,8 +69,6 @@ class PluginAboutsccglpiAdminPanel
         }
     }
 
-    /* ------------------------------ tabs -------------------------------- */
-
     private function renderTabs(string $active): void
     {
         $t    = fn(string $s) => PluginAboutsccglpiHtmlHelper::t($s);
@@ -89,8 +81,6 @@ class PluginAboutsccglpiAdminPanel
             . htmlescape($self) . "?tab=subpages'>" . htmlescape($t('Subpages')) . "</a></li>";
         echo "</ul>";
     }
-
-    /* --------------------------- home tab -------------------------------- */
 
     private function renderHomeTab(PluginAboutsccglpiDocumentation $doc): void
     {
@@ -138,8 +128,8 @@ class PluginAboutsccglpiAdminPanel
         echo "</label>";
         echo $this->previewPane($preview);
         echo "</div>";
-        echo "</div>"; // row
-        echo "</div>"; // card-body
+        echo "</div>";
+        echo "</div>";
 
         echo "<div class='card-footer text-end'>";
         echo "<button type='submit' name='update' class='btn btn-primary'>";
@@ -147,11 +137,9 @@ class PluginAboutsccglpiAdminPanel
         echo "</button>";
         echo "</div>";
 
-        echo "</div>"; // card
+        echo "</div>";
         echo "</form>";
     }
-
-    /* ------------------------- subpages tab ------------------------------ */
 
     private function renderSubpagesTab(): void
     {
@@ -212,8 +200,8 @@ class PluginAboutsccglpiAdminPanel
             }
             echo "</tbody></table>";
         }
-        echo "</div>"; // card-body
-        echo "</div>"; // card
+        echo "</div>";
+        echo "</div>";
     }
 
     private function renderSubpageForm(?int $id): void
@@ -271,8 +259,8 @@ class PluginAboutsccglpiAdminPanel
         echo "</label>";
         echo $this->previewPane($preview);
         echo "</div>";
-        echo "</div>"; // row
-        echo "</div>"; // card-body
+        echo "</div>";
+        echo "</div>";
 
         echo "<div class='card-footer text-end'>";
         echo "<button type='submit' name='{$action}' class='btn btn-primary'>";
@@ -280,13 +268,10 @@ class PluginAboutsccglpiAdminPanel
         echo "</button>";
         echo "</div>";
 
-        echo "</div>"; // card
+        echo "</div>";
         echo "</form>";
     }
 
-    /* ------------------------------ shared -------------------------------- */
-
-    /** Markdown syntax hint block, shared between the home and subpage forms. */
     private function markdownHint(): string
     {
         $t = fn(string $s) => PluginAboutsccglpiHtmlHelper::t($s);
@@ -303,7 +288,6 @@ class PluginAboutsccglpiAdminPanel
         return $html;
     }
 
-    /** Rendered-preview pane, shared between the home and subpage forms. */
     private function previewPane(string $preview): string
     {
         $t = fn(string $s) => PluginAboutsccglpiHtmlHelper::t($s);
@@ -318,7 +302,6 @@ class PluginAboutsccglpiAdminPanel
         return $html;
     }
 
-    /** Typography for the preview pane. */
     private function styles(): string
     {
         return <<<'CSS'

@@ -1,7 +1,3 @@
-/*
- * UI Customizer – frontend core: one shared MutationObserver + event bus.
- * Modules (profile-ui.js, edit-mode.js) subscribe to 'uic:mutate' (UIC.on).
- */
 (function () {
     'use strict';
     if (window.UIC) return;
@@ -35,7 +31,6 @@
         }
     }
 
-    // Debounced (80ms) observer emitting 'uic:mutate' with added nodes.
     var pendingNodes = [];
     var pendingTimer = null;
 
@@ -63,7 +58,6 @@
         return observer;
     }
 
-    // Polls checkFn() every frame until the DOM stops changing or maxFrames is hit.
     function stabilize(checkFn, opts) {
         opts = opts || {};
         var maxFrames = opts.maxFrames || 90;

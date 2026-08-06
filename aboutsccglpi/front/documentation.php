@@ -1,7 +1,4 @@
 <?php
-/**
- * Public documentation page entry point.
- */
 
 include('../../../inc/includes.php');
 

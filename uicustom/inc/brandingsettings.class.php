@@ -1,14 +1,8 @@
 <?php
-/**
- * Global branding settings (colors, logo, interface toggles), stored in
- * Config under context 'plugin:uicustom'. Rendered as CSS by
- * ajax/branding.css.php.
- */
 class PluginUicustomBrandingSettings
 {
     private const CONTEXT = 'plugin:uicustom';
 
-    /** Config key => GLPI CSS variable. */
     public const CSS_VARS = [
         'brand_primary'    => '--tblr-primary',
         'brand_link'       => '--tblr-link-color',
@@ -16,7 +10,6 @@ class PluginUicustomBrandingSettings
         'brand_sidebar_fg' => '--glpi-mainmenu-fg',
     ];
 
-    /** GLPI CSS variables overridden by the company logo. */
     private const LOGO_CSS_VARS = [
         '--glpi-logo-light',
         '--glpi-logo-dark',
@@ -29,7 +22,6 @@ class PluginUicustomBrandingSettings
     private const LOGO_MAX_BYTES = 300 * 1024;
     private const LOGO_ALLOWED_MIMES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 
-    /** GLPI default colors. */
     public static function defaults(): array
     {
         return [
@@ -40,7 +32,6 @@ class PluginUicustomBrandingSettings
         ];
     }
 
-    /** Color field labels for the admin form. */
     public static function labels(): array
     {
         return [
@@ -56,14 +47,12 @@ class PluginUicustomBrandingSettings
         return self::LOGO_CSS_VARS;
     }
 
-    /** "#rrggbb" -> "r, g, b". */
     public static function hexToRgbTriple(string $hex): string
     {
         [$r, $g, $b] = sscanf($hex, '#%02x%02x%02x');
         return "{$r}, {$g}, {$b}";
     }
 
-    /** Best-contrast foreground color (white or dark) for a background hex. */
     public static function contrastingForeground(string $hex): string
     {
         [$r, $g, $b] = sscanf($hex, '#%02x%02x%02x');
@@ -71,7 +60,6 @@ class PluginUicustomBrandingSettings
         return $luminance > 0.6 ? '#1e293b' : '#ffffff';
     }
 
-    /** Darkens a hex color by $percent, for link hover state. */
     public static function darken(string $hex, float $percent): string
     {
         [$r, $g, $b] = sscanf($hex, '#%02x%02x%02x');
@@ -82,9 +70,7 @@ class PluginUicustomBrandingSettings
         return sprintf('#%02x%02x%02x', $r, $g, $b);
     }
 
-    /* ------------------------------ colors ------------------------------ */
 
-    /** Current color values, defaults applied where missing/invalid. */
     public function get(): array
     {
         $stored = Config::getConfigurationValues(self::CONTEXT, array_keys(self::CSS_VARS));
@@ -122,7 +108,6 @@ class PluginUicustomBrandingSettings
         return (bool) preg_match('/^#[0-9a-fA-F]{6}$/', $v);
     }
 
-    /* ------------------------------- logo -------------------------------- */
 
     public function hasLogo(): bool
     {
@@ -130,7 +115,6 @@ class PluginUicustomBrandingSettings
         return !empty($stored['brand_logo_data']);
     }
 
-    /** @return array{mime:string,data:string}|null Decoded logo bytes. */
     public function getLogo(): ?array
     {
         $stored = Config::getConfigurationValues(self::CONTEXT, ['brand_logo_data', 'brand_logo_mime']);
@@ -144,18 +128,12 @@ class PluginUicustomBrandingSettings
         return ['mime' => (string) $stored['brand_logo_mime'], 'data' => $data];
     }
 
-    /** Timestamp of the last logo change, for cache-busting. */
     public function logoUpdatedAt(): int
     {
         $stored = Config::getConfigurationValues(self::CONTEXT, ['brand_logo_updated']);
         return (int) ($stored['brand_logo_updated'] ?? 0);
     }
 
-    /**
-     * Validates and stores an uploaded logo file.
-     *
-     * @throws RuntimeException on validation failure.
-     */
     public function saveLogo(array $file): void
     {
         if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {

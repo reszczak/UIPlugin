@@ -1,7 +1,4 @@
 <?php
-/**
- * Plugin lifecycle: creates/maintains the per-profile config table.
- */
 
 function plugin_uicustom_install() {
     global $DB;

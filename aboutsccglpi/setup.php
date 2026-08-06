@@ -1,7 +1,4 @@
 <?php
-/**
- * Plugin bootstrap: hooks registration. Business logic lives in inc/.
- */
 
 define('PLUGIN_ABOUTSCCGLPI_VERSION', '1.0.0');
 define('PLUGIN_ABOUTSCCGLPI_MIN_GLPI', '11.0.0');
@@ -13,7 +10,6 @@ function plugin_init_aboutsccglpi(): void
 
     $PLUGIN_HOOKS['csrf_compliant']['aboutsccglpi'] = true;
 
-    // Load locales/<lang>.php (phparray format) for the active session language.
     $lang    = $_SESSION['glpilanguage'] ?? ($CFG_GLPI['language'] ?? '');
     $phpfile = __DIR__ . '/locales/' . $lang . '.php';
     if ($lang !== '' && is_file($phpfile) && isset($GLOBALS['TRANSLATE'])) {

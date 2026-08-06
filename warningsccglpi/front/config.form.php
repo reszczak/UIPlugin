@@ -2,4 +2,4 @@
 
 Session::checkRight('config', UPDATE);
 
-(new PluginUicustomAdminPanel())->run();
+(new PluginWarningsccglpiAdminPanel())->run();

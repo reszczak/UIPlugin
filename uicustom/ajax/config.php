@@ -1,8 +1,4 @@
 <?php
-/**
- * Returns the "forms" rule of the active profile as JSON.
- * Consumed by public/js/profile-ui.js.
- */
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -14,7 +10,6 @@ if (!Session::getLoginUserID()) {
 
 $repo = new PluginUicustomProfileConfigRepository();
 
-// Admin (config/UPDATE) can fetch a given profile's rule (used by live edit mode).
 $pid = (int) ($_GET['profiles_id'] ?? 0);
 if ($pid > 0) {
     if (!Session::haveRight('config', UPDATE)) {

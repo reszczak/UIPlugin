@@ -1,19 +1,4 @@
 <?php
-/**
- * Admin-only: saves a rule fragment composed in live edit mode.
- * Merges into the existing profile rule.
- *
- * POST JSON:
- * {
- *   "profiles_id": 6,
- *   "itemtype": "computer",
- *   "tabs_keep": ["Computer", ...],
- *   "devices_hide": ["DeviceNetworkCard", ...],
- *   "columns_hide": { "Item_SoftwareVersion": [2,4] },
- *   "cleanup": { "hide_all_tab": true, "hide_qr": false, "hide_device_actions": true },
- *   "fields": { "computer.form.php": {"mode":"keep","list":[...]} }
- * }
- */
 
 Session::checkRight('config', UPDATE);
 header('Content-Type: application/json; charset=utf-8');

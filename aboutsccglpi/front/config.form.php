@@ -1,7 +1,4 @@
 <?php
-/**
- * Config panel entry point.
- */
 
 include('../../../inc/includes.php');
 

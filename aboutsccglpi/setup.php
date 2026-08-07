@@ -20,6 +20,14 @@ function plugin_init_aboutsccglpi(): void
     $PLUGIN_HOOKS['add_javascript']['aboutsccglpi'] = 'js/aboutsccglpi.js';
 
     if (Session::getLoginUserID()) {
+        if (
+            isset($_SESSION['glpimenu']['aboutsccglpi']['title'])
+            && $_SESSION['glpimenu']['aboutsccglpi']['title'] !== PluginAboutsccglpiMenu::getMenuName()
+        ) {
+            // Stale cached menu (e.g. built before a translation update) — force a rebuild.
+            unset($_SESSION['glpimenu']);
+        }
+
         $PLUGIN_HOOKS['menu_toadd']['aboutsccglpi'] = [
             'aboutsccglpi' => [PluginAboutsccglpiMenu::class],
         ];

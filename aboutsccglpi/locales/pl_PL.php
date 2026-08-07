@@ -1,7 +1,9 @@
 <?php
 
 return [
+    'Information' => 'Informacje',
     'About the Application' => 'O Aplikacji',
+    'Help' => 'Pomoc',
     'Configuration — “About the Application” documentation' => 'Konfiguracja — dokumentacja „O Aplikacji”',
     'View page' => 'Zobacz stronę',
     'Page title' => 'Tytuł strony',

@@ -4,7 +4,7 @@ class PluginAboutsccglpiMenu extends CommonGLPI
 {
     public static function getMenuName()
     {
-        return __('About the Application', 'aboutsccglpi');
+        return __('Information', 'aboutsccglpi');
     }
 
     public static function getIcon()
@@ -15,9 +15,18 @@ class PluginAboutsccglpiMenu extends CommonGLPI
     public static function getMenuContent()
     {
         return [
+            'is_multi_entries' => true,
             'title' => self::getMenuName(),
-            'page'  => '/plugins/aboutsccglpi/front/documentation.php',
-            'icon'  => self::getIcon(),
+            'documentation' => [
+                'title' => __('About the Application', 'aboutsccglpi'),
+                'page'  => '/plugins/aboutsccglpi/front/documentation.php',
+                'icon'  => self::getIcon(),
+            ],
+            'help' => [
+                'title' => __('Help', 'aboutsccglpi'),
+                'page'  => '/front/helpdesk.faq.php',
+                'icon'  => 'ti ti-help',
+            ],
         ];
     }
 }

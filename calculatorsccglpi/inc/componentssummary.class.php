@@ -28,12 +28,14 @@ class PluginCalculatorsccglpiComponentsSummary
 
         $logical        = 0;
         $cores          = 0;
+        $threads        = 0;
         $multithreading = false;
         foreach ($DB->request(['SELECT' => ['nbcores', 'nbthreads'], 'FROM' => Item_DeviceProcessor::getTable(), 'WHERE' => $where]) as $row) {
             $c = max(0, (int) $row['nbcores']);
             $t = max(0, (int) $row['nbthreads']);
             $logical++;
-            $cores = max($cores, $c);
+            $cores   += $c;
+            $threads += $t;
             if ($c > 0 && $t > $c) {
                 $multithreading = true;
             }
@@ -44,6 +46,7 @@ class PluginCalculatorsccglpiComponentsSummary
             'hdd'            => $hdd,
             'logical'        => $logical,
             'cores'          => $cores,
+            'threads'        => $threads,
             'multithreading' => $multithreading,
         ];
     }
@@ -63,7 +66,7 @@ class PluginCalculatorsccglpiComponentsSummary
             ],
             [
                 'icon'  => 'ti-database',
-                'label' => self::t('Total disk capacity'),
+                'label' => self::t('Disk space'),
                 'value' => $this->formatMio($sums['hdd']),
                 'code'  => 'HDD',
             ],
@@ -106,31 +109,31 @@ class PluginCalculatorsccglpiComponentsSummary
         $mtValue = $sums['multithreading']
             ? "<span class='text-green'>" . htmlescape(__('Yes')) . "</span>"
             : htmlescape(__('No'));
-        $logical = (int) $sums['logical'];
-        $cores   = (int) $sums['cores'];
 
         $columns = [
-            ['value' => (string) $logical, 'code' => 'CPU_LOGICAL_CNT'],
-            ['value' => (string) $cores,   'code' => 'CPU_CORE_CNT'],
-            ['value' => $mtValue,          'code' => 'MULTITHREADING'],
+            ['value' => (string) (int) $sums['logical'], 'label' => self::t('Number of processors')],
+            ['value' => (string) (int) $sums['cores'],   'label' => self::t('Total number of cores')],
+            ['value' => (string) (int) $sums['threads'], 'label' => self::t('Total number of threads')],
+            ['value' => $mtValue,                        'label' => self::t('Multithreading')],
         ];
 
         $columnsHtml = '';
         foreach ($columns as $column) {
+            $columnLabel = htmlescape($column['label']);
             $columnsHtml .= <<<HTML
-                <div class="text-center">
+                <div class="text-center" style="width: 7.5rem;">
                     <div class="fs-3 fw-bold lh-1">{$column['value']}</div>
-                    <div class="text-muted small font-monospace mt-1 text-nowrap">{$column['code']}</div>
+                    <div class="text-muted small mt-1">{$columnLabel}</div>
                 </div>
             HTML;
         }
 
         return <<<HTML
-            <div class="border rounded-2 px-3 py-2 flex-fill text-center" style="min-width: 22rem;">
+            <div class="border rounded-2 px-3 py-2 flex-fill text-center" style="min-width: 26rem;">
                 <div class="d-flex align-items-center justify-content-center text-muted small mb-1 text-nowrap">
                     <i class="ti ti-cpu me-1"></i>{$label}
                 </div>
-                <div class="d-flex flex-wrap justify-content-center column-gap-4">
+                <div class="d-flex flex-wrap justify-content-center column-gap-4 row-gap-2">
                     {$columnsHtml}
                 </div>
             </div>

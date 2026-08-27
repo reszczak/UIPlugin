@@ -33,7 +33,7 @@ class PluginCalculatorsccglpiComponentsSummary
             $c = max(0, (int) $row['nbcores']);
             $t = max(0, (int) $row['nbthreads']);
             $logical++;
-            $cores += $c;
+            $cores = max($cores, $c);
             if ($c > 0 && $t > $c) {
                 $multithreading = true;
             }

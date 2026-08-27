@@ -50,7 +50,7 @@ class PluginCalculatorsccglpiSummary
 
         foreach ($iterator as $row) {
             $fsName = mb_strtolower(trim((string) ($row['fsname'] ?? '')));
-            if (in_array($fsName, $disallowed, true)) {
+            if ($fsName === '' || in_array($fsName, $disallowed, true)) {
                 $excluded++;
                 continue;
             }

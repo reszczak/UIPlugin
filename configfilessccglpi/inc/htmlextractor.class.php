@@ -7,6 +7,7 @@ class PluginConfigfilessccglpiHtmlExtractor
         $css  = $this->embedCss();
 
         return '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+            . '<base href="about:srcdoc">'
             . '<style>' . $css . '</style>'
             . '</head><body><div class="scc-embed">' . $body . '</div></body></html>';
     }
@@ -35,6 +36,13 @@ class PluginConfigfilessccglpiHtmlExtractor
             for ($i = $nodes->length - 1; $i >= 0; $i--) {
                 $node = $nodes->item($i);
                 $node->parentNode?->removeChild($node);
+            }
+        }
+
+        foreach ($dom->getElementsByTagName('a') as $anchor) {
+            $href = $anchor->getAttribute('href');
+            if ($href !== '' && $href[0] !== '#') {
+                $anchor->removeAttribute('href');
             }
         }
 

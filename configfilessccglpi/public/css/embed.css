@@ -1,0 +1,89 @@
+:root {
+    --scc-primary: #1c7ed6;
+    --scc-border: #dee2e6;
+    --scc-bg: #ffffff;
+    --scc-bg-muted: #f8f9fa;
+    --scc-text: #182433;
+    --scc-text-muted: #6c757d;
+    --scc-radius: 6px;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--scc-bg);
+    color: var(--scc-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.scc-embed {
+    padding: 1rem 1.25rem;
+}
+
+.SCC_SNAP_NAV h4,
+.SCC_SNAP_MENU h4,
+.SCC_SNAP_ENTRY h4,
+.SCC_SNAP_STATS h4,
+.SCC_SNAP_HELP h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 .5rem;
+    color: var(--scc-text);
+}
+
+.SCC_SNAP_NAV {
+    border-bottom: 1px solid var(--scc-border);
+    padding-bottom: .5rem;
+    margin-bottom: 1rem;
+}
+
+.SCC_SNAP_NAV h4 {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem 1rem;
+}
+
+.SCC_SNAP_MENU {
+    background: var(--scc-bg-muted);
+    border: 1px solid var(--scc-border);
+    border-radius: var(--scc-radius);
+    padding: .75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.SCC_SNAP_MENU hr {
+    display: none;
+}
+
+.SCC_SNAP_ENTRY,
+.SCC_SNAP_STATS,
+.SCC_SNAP_HELP {
+    background: var(--scc-bg);
+    border: 1px solid var(--scc-border);
+    border-radius: var(--scc-radius);
+    padding: .75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+a {
+    color: var(--scc-primary);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+pre {
+    background: var(--scc-bg-muted);
+    border: 1px solid var(--scc-border);
+    border-radius: var(--scc-radius);
+    padding: .75rem 1rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .8125rem;
+    margin: 0;
+}

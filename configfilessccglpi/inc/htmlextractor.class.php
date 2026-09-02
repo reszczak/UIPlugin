@@ -40,6 +40,15 @@ class PluginConfigfilessccglpiHtmlExtractor
             }
         }
 
+        foreach ($dom->getElementsByTagName('*') as $element) {
+            for ($i = $element->attributes->length - 1; $i >= 0; $i--) {
+                $name = $element->attributes->item($i)->name;
+                if (stripos($name, 'on') === 0) {
+                    $element->removeAttribute($name);
+                }
+            }
+        }
+
         foreach ($dom->getElementsByTagName('a') as $anchor) {
             $href = $anchor->getAttribute('href');
             if ($href !== '' && $href[0] !== '#') {

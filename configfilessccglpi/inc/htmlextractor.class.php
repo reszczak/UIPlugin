@@ -1,9 +1,9 @@
 <?php
 class PluginConfigfilessccglpiHtmlExtractor
 {
-    public function buildEmbeddableDocument(string $rawHtml, ?string $logbookUrl = null): string
+    public function buildEmbeddableDocument(string $rawHtml, ?string $homeUrl = null): string
     {
-        $body = $this->extractBody($rawHtml, $logbookUrl);
+        $body = $this->extractBody($rawHtml, $homeUrl);
         $css  = $this->embedCss();
 
         return '<!DOCTYPE html><html><head><meta charset="UTF-8">'
@@ -13,7 +13,7 @@ class PluginConfigfilessccglpiHtmlExtractor
             . '</head><body><div class="scc-embed">' . $body . '</div></body></html>';
     }
 
-    private function extractBody(string $rawHtml, ?string $logbookUrl): string
+    private function extractBody(string $rawHtml, ?string $homeUrl): string
     {
         if (trim($rawHtml) === '') {
             return '';
@@ -47,12 +47,11 @@ class PluginConfigfilessccglpiHtmlExtractor
             }
         }
 
-        if ($logbookUrl !== null) {
+        if ($homeUrl !== null) {
             foreach ($dom->getElementsByTagName('a') as $anchor) {
-                if (strtolower(trim($anchor->textContent)) === 'logbook') {
-                    $anchor->setAttribute('href', $logbookUrl);
-                    $anchor->setAttribute('target', '_blank');
-                    $anchor->setAttribute('rel', 'noopener');
+                if (strtolower(trim($anchor->textContent)) === 'home') {
+                    $anchor->setAttribute('href', $homeUrl);
+                    $anchor->setAttribute('target', '_top');
                 }
             }
         }

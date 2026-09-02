@@ -11,21 +11,20 @@ class PluginConfigfilessccglpiRenderer
             return;
         }
 
-        $logbookUrl = empty($locator->findLogbookForComputer($computer))
-            ? null
-            : $this->logbookUrl($computer);
+        $homeUrl = $this->homeUrl($computer);
+        $logbook = $locator->findLogbookForComputer($computer)[0] ?? null;
 
         $extractor = new PluginConfigfilessccglpiHtmlExtractor();
         foreach ($documents as $document) {
-            $this->renderDocument($document, $extractor, $logbookUrl);
+            $this->renderDocument($document, $logbook, $extractor, $homeUrl);
         }
     }
 
-    private function logbookUrl(Computer $computer): string
+    private function homeUrl(Computer $computer): string
     {
         global $CFG_GLPI;
 
-        return $CFG_GLPI['url_base'] . '/plugins/configfilessccglpi/front/logbook.php?computers_id=' . $computer->getID();
+        return $CFG_GLPI['url_base'] . '/front/computer.form.php?id=' . $computer->getID() . '&forcetab=Computer$main';
     }
 
     private function renderEmptyState(): void
@@ -34,8 +33,12 @@ class PluginConfigfilessccglpiRenderer
         echo "<div class='alert alert-info'>{$message}</div>";
     }
 
-    private function renderDocument(array $document, PluginConfigfilessccglpiHtmlExtractor $extractor, ?string $logbookUrl): void
-    {
+    private function renderDocument(
+        array $document,
+        ?array $logbook,
+        PluginConfigfilessccglpiHtmlExtractor $extractor,
+        string $homeUrl
+    ): void {
         $path = GLPI_DOC_DIR . '/' . $document['filepath'];
         if (!is_file($path) || !is_readable($path)) {
             $missing = htmlescape(sprintf(
@@ -47,8 +50,16 @@ class PluginConfigfilessccglpiRenderer
         }
 
         $raw        = (string) file_get_contents($path);
-        $embeddable = $extractor->buildEmbeddableDocument($raw, $logbookUrl);
-        $srcdoc     = htmlescape($embeddable);
+        $configSrcdoc = htmlescape($extractor->buildEmbeddableDocument($raw, $homeUrl));
+
+        $logSrcdoc = null;
+        if ($logbook !== null) {
+            $logPath = GLPI_DOC_DIR . '/' . $logbook['filepath'];
+            if (is_file($logPath) && is_readable($logPath)) {
+                $logRaw    = (string) file_get_contents($logPath);
+                $logSrcdoc = htmlescape($extractor->buildEmbeddableDocument($logRaw, $homeUrl));
+            }
+        }
 
         $title        = htmlescape($document['name'] !== '' ? $document['name'] : $document['filename']);
         $updatedLabel = htmlescape(__('Last update', 'configfilessccglpi'));
@@ -59,10 +70,39 @@ class PluginConfigfilessccglpiRenderer
         echo "<h3 class='card-title mb-0'><i class='ti ti-file-code me-1'></i>{$title}</h3>";
         echo "<span class='text-muted small'>{$updatedLabel}: {$updated}</span>";
         echo "</div>";
+
+        if ($logSrcdoc !== null) {
+            $this->renderDualPane($configSrcdoc, $logSrcdoc);
+        } else {
+            echo "<div class='card-body p-0'>";
+            $this->renderFrame($configSrcdoc);
+            echo "</div>";
+        }
+
+        echo "</div>";
+    }
+
+    private function renderDualPane(string $configSrcdoc, string $logSrcdoc): void
+    {
+        $configLabel = htmlescape(__('Configuration file', 'configfilessccglpi'));
+        $logLabel    = htmlescape(__('Logbook', 'configfilessccglpi'));
+
         echo "<div class='card-body p-0'>";
-        echo "<iframe class='plugin-configfilessccglpi-frame' sandbox='allow-same-origin allow-popups' "
-            . "style='width:100%;border:0;display:block;min-height:200px' "
+        echo "<ul class='nav nav-pills p-2 pb-0' role='tablist'>";
+        echo "<li class='nav-item'><button type='button' class='nav-link active' data-scc-pane='config'>{$configLabel}</button></li>";
+        echo "<li class='nav-item'><button type='button' class='nav-link' data-scc-pane='log'>{$logLabel}</button></li>";
+        echo "</ul>";
+        $this->renderFrame($configSrcdoc, 'config', false);
+        $this->renderFrame($logSrcdoc, 'log', true);
+        echo "</div>";
+    }
+
+    private function renderFrame(string $srcdoc, ?string $pane = null, bool $hidden = false): void
+    {
+        $paneAttr   = $pane !== null ? " data-scc-pane='{$pane}'" : '';
+        $hiddenAttr = $hidden ? ' hidden' : '';
+        echo "<iframe class='plugin-configfilessccglpi-frame' sandbox='allow-same-origin allow-top-navigation-by-user-activation' "
+            . "style='width:100%;border:0;display:block;min-height:200px'{$paneAttr}{$hiddenAttr} "
             . "srcdoc=\"{$srcdoc}\"></iframe>";
-        echo "</div></div>";
     }
 }

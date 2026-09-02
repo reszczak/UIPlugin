@@ -30,12 +30,63 @@
         }
     }
 
+    function showPane(card, pane) {
+        card.querySelectorAll('.nav-link[data-scc-pane]').forEach(function (btn) {
+            btn.classList.toggle('active', btn.dataset.sccPane === pane);
+        });
+        card.querySelectorAll('iframe[data-scc-pane]').forEach(function (frame) {
+            var show = frame.dataset.sccPane === pane;
+            frame.hidden = !show;
+            if (show) {
+                resize(frame);
+            }
+        });
+    }
+
+    function bindSubtabButtons(card) {
+        card.querySelectorAll('.nav-link[data-scc-pane]:not([data-scc-bound])').forEach(function (btn) {
+            btn.dataset.sccBound = '1';
+            btn.addEventListener('click', function () {
+                showPane(card, btn.dataset.sccPane);
+            });
+        });
+    }
+
+    function bindCrossPaneLink(iframe, card) {
+        var pane = iframe.dataset.sccPane;
+        if (!pane) {
+            return;
+        }
+        try {
+            var doc = iframe.contentDocument;
+            if (!doc) {
+                return;
+            }
+            var targetPane  = pane === 'config' ? 'log' : 'config';
+            var targetLabel = pane === 'config' ? 'logbook' : 'configuration';
+            doc.querySelectorAll('a').forEach(function (a) {
+                if (a.textContent.trim().toLowerCase() === targetLabel) {
+                    a.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        showPane(card, targetPane);
+                    });
+                }
+            });
+        } catch (e) {
+        }
+    }
+
     function bindAll() {
         document.querySelectorAll('iframe.plugin-configfilessccglpi-frame:not([data-scc-bound])').forEach(function (iframe) {
             iframe.dataset.sccBound = '1';
             iframe.addEventListener('load', function () {
                 resize(iframe);
                 unsmoothScroll(iframe);
+                var card = iframe.closest('.card');
+                if (card) {
+                    bindSubtabButtons(card);
+                    bindCrossPaneLink(iframe, card);
+                }
             });
         });
     }

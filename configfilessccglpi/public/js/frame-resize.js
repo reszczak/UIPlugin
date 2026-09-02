@@ -10,6 +10,23 @@
         }
     }
 
+    function watchResize(iframe) {
+        try {
+            var doc = iframe.contentDocument;
+            if (!doc) {
+                return;
+            }
+            var target = doc.body || doc.documentElement;
+            if (!target || !window.ResizeObserver) {
+                return;
+            }
+            new ResizeObserver(function () {
+                resize(iframe);
+            }).observe(target);
+        } catch (e) {
+        }
+    }
+
     function unsmoothScroll(iframe) {
         try {
             var doc = iframe.contentDocument;
@@ -35,6 +52,7 @@
             iframe.dataset.sccBound = '1';
             iframe.addEventListener('load', function () {
                 resize(iframe);
+                watchResize(iframe);
                 unsmoothScroll(iframe);
             });
         });

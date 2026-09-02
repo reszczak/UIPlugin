@@ -83,9 +83,23 @@ pre {
     border: 1px solid var(--scc-border);
     border-radius: var(--scc-radius);
     padding: .75rem 1rem;
-    white-space: pre-wrap;
-    word-break: break-word;
+    white-space: pre;
+    overflow-x: auto;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: .8125rem;
     margin: 0;
+}
+
+table {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+    border-collapse: collapse;
+    font-size: .8125rem;
+}
+
+th, td {
+    white-space: nowrap;
+    padding: .25rem .5rem;
+    border: 1px solid var(--scc-border);
 }

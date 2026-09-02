@@ -43,27 +43,31 @@
         });
     }
 
-    function bindSubtabButtons(card) {
-        card.querySelectorAll('.nav-link[data-scc-pane]:not([data-scc-bound])').forEach(function (btn) {
+    function bindSubtabButtons() {
+        document.querySelectorAll('.nav-link[data-scc-pane]:not([data-scc-bound])').forEach(function (btn) {
             btn.dataset.sccBound = '1';
             btn.addEventListener('click', function () {
-                showPane(card, btn.dataset.sccPane);
+                var card = btn.closest('.card');
+                if (card) {
+                    showPane(card, btn.dataset.sccPane);
+                }
             });
         });
     }
 
-    function bindAll() {
+    function bindFrames() {
         document.querySelectorAll('iframe.plugin-configfilessccglpi-frame:not([data-scc-bound])').forEach(function (iframe) {
             iframe.dataset.sccBound = '1';
             iframe.addEventListener('load', function () {
                 resize(iframe);
                 unsmoothScroll(iframe);
-                var card = iframe.closest('.card');
-                if (card) {
-                    bindSubtabButtons(card);
-                }
             });
         });
+    }
+
+    function bindAll() {
+        bindSubtabButtons();
+        bindFrames();
     }
 
     document.addEventListener('DOMContentLoaded', function () {

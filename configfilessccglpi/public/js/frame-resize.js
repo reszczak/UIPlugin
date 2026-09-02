@@ -30,32 +30,7 @@
         }
     }
 
-    function showPane(card, pane) {
-        card.querySelectorAll('.nav-link[data-scc-pane]').forEach(function (btn) {
-            btn.classList.toggle('active', btn.dataset.sccPane === pane);
-        });
-        card.querySelectorAll('iframe[data-scc-pane]').forEach(function (frame) {
-            var show = frame.dataset.sccPane === pane;
-            frame.hidden = !show;
-            if (show) {
-                resize(frame);
-            }
-        });
-    }
-
-    function bindSubtabButtons() {
-        document.querySelectorAll('.nav-link[data-scc-pane]:not([data-scc-bound])').forEach(function (btn) {
-            btn.dataset.sccBound = '1';
-            btn.addEventListener('click', function () {
-                var card = btn.closest('.card');
-                if (card) {
-                    showPane(card, btn.dataset.sccPane);
-                }
-            });
-        });
-    }
-
-    function bindFrames() {
+    function bindAll() {
         document.querySelectorAll('iframe.plugin-configfilessccglpi-frame:not([data-scc-bound])').forEach(function (iframe) {
             iframe.dataset.sccBound = '1';
             iframe.addEventListener('load', function () {
@@ -63,11 +38,6 @@
                 unsmoothScroll(iframe);
             });
         });
-    }
-
-    function bindAll() {
-        bindSubtabButtons();
-        bindFrames();
     }
 
     document.addEventListener('DOMContentLoaded', function () {

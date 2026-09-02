@@ -19,6 +19,7 @@ function plugin_init_configfilessccglpi(): void
     $PLUGIN_HOOKS['add_javascript']['configfilessccglpi'] = 'js/frame-resize.js';
 
     Plugin::registerClass('PluginConfigfilessccglpiComputertab', ['addtabon' => ['Computer']]);
+    Plugin::registerClass('PluginConfigfilessccglpiLogbookTab', ['addtabon' => ['Computer']]);
 }
 
 function plugin_version_configfilessccglpi(): array

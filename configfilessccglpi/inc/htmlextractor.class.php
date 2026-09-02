@@ -1,11 +1,13 @@
 <?php
 class PluginConfigfilessccglpiHtmlExtractor
 {
-    private const STRIPPED_NAV_CLASSES = ['scc_snap_nav', 'scc_log_nav'];
-
-    public function buildEmbeddableDocument(string $rawHtml): string
+    /**
+     * @param array<string,string> $navLinks map of lowercase link label (e.g. 'home',
+     *        'logbook', 'configuration') to the absolute URL it should point to.
+     */
+    public function buildEmbeddableDocument(string $rawHtml, array $navLinks = []): string
     {
-        $body = $this->extractBody($rawHtml);
+        $body = $this->extractBody($rawHtml, $navLinks);
         $css  = $this->embedCss();
 
         return '<!DOCTYPE html><html><head><meta charset="UTF-8">'
@@ -15,7 +17,7 @@ class PluginConfigfilessccglpiHtmlExtractor
             . '</head><body><div class="scc-embed">' . $body . '</div></body></html>';
     }
 
-    private function extractBody(string $rawHtml): string
+    private function extractBody(string $rawHtml, array $navLinks): string
     {
         if (trim($rawHtml) === '') {
             return '';
@@ -51,21 +53,20 @@ class PluginConfigfilessccglpiHtmlExtractor
             }
         }
 
-        $navDivs = [];
-        foreach ($dom->getElementsByTagName('div') as $div) {
-            $class = strtolower(trim($div->getAttribute('class')));
-            if (in_array($class, self::STRIPPED_NAV_CLASSES, true)) {
-                $navDivs[] = $div;
-            }
-        }
-        foreach ($navDivs as $div) {
-            $div->parentNode?->removeChild($div);
-        }
-
         foreach ($dom->getElementsByTagName('a') as $anchor) {
             $href = $anchor->getAttribute('href');
             if ($href !== '' && $href[0] !== '#') {
                 $anchor->removeAttribute('href');
+            }
+        }
+
+        if (!empty($navLinks)) {
+            foreach ($dom->getElementsByTagName('a') as $anchor) {
+                $label = strtolower(trim($anchor->textContent));
+                if (isset($navLinks[$label])) {
+                    $anchor->setAttribute('href', $navLinks[$label]);
+                    $anchor->setAttribute('target', '_top');
+                }
             }
         }
 

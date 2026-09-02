@@ -1,5 +1,5 @@
 <?php
-class PluginConfigfilessccglpiComputertab extends CommonDBTM
+class PluginConfigfilessccglpiLogbookTab extends CommonDBTM
 {
     public static function canView(): bool
     {
@@ -12,13 +12,16 @@ class PluginConfigfilessccglpiComputertab extends CommonDBTM
             return '';
         }
 
-        $count = count((new PluginConfigfilessccglpiDocumentLocator())->findForComputer($item));
+        $count = count((new PluginConfigfilessccglpiDocumentLocator())->findLogbookForComputer($item));
+        if ($count === 0) {
+            return '';
+        }
 
         return self::createTabEntry(
-            __('Configuration file', 'configfilessccglpi'),
+            __('Logbook', 'configfilessccglpi'),
             $count,
             $item->getType(),
-            'ti ti-file-code'
+            'ti ti-notebook'
         );
     }
 
@@ -28,7 +31,7 @@ class PluginConfigfilessccglpiComputertab extends CommonDBTM
             return false;
         }
 
-        (new PluginConfigfilessccglpiRenderer())->render($item);
+        (new PluginConfigfilessccglpiRenderer())->renderLogbook($item);
 
         return true;
     }

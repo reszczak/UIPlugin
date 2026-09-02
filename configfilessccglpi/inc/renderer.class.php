@@ -3,45 +3,23 @@ class PluginConfigfilessccglpiRenderer
 {
     public function render(Computer $computer): void
     {
-        $locator   = new PluginConfigfilessccglpiDocumentLocator();
-        $documents = $locator->findForComputer($computer);
-
-        $navLinks = ['home' => $this->tabUrl($computer, 'Computer$main')];
-        if (!empty($locator->findLogbookForComputer($computer))) {
-            $navLinks['logbook'] = $this->tabUrl($computer, 'PluginConfigfilessccglpiLogbookTab$1');
-        }
-
+        $documents = (new PluginConfigfilessccglpiDocumentLocator())->findForComputer($computer);
         $this->renderDocuments(
             $documents,
-            __('No configuration file is linked to this computer yet.', 'configfilessccglpi'),
-            $navLinks
+            __('No configuration file is linked to this computer yet.', 'configfilessccglpi')
         );
     }
 
     public function renderLogbook(Computer $computer): void
     {
         $documents = (new PluginConfigfilessccglpiDocumentLocator())->findLogbookForComputer($computer);
-
-        $navLinks = [
-            'home'          => $this->tabUrl($computer, 'Computer$main'),
-            'configuration' => $this->tabUrl($computer, 'PluginConfigfilessccglpiComputertab$1'),
-        ];
-
         $this->renderDocuments(
             $documents,
-            __('No logbook file is linked to this computer yet.', 'configfilessccglpi'),
-            $navLinks
+            __('No logbook file is linked to this computer yet.', 'configfilessccglpi')
         );
     }
 
-    private function tabUrl(Computer $computer, string $forcetab): string
-    {
-        global $CFG_GLPI;
-
-        return $CFG_GLPI['url_base'] . '/front/computer.form.php?id=' . $computer->getID() . '&forcetab=' . $forcetab;
-    }
-
-    private function renderDocuments(array $documents, string $emptyMessage, array $navLinks): void
+    private function renderDocuments(array $documents, string $emptyMessage): void
     {
         if (empty($documents)) {
             echo "<div class='alert alert-info'>" . htmlescape($emptyMessage) . "</div>";
@@ -50,11 +28,11 @@ class PluginConfigfilessccglpiRenderer
 
         $extractor = new PluginConfigfilessccglpiHtmlExtractor();
         foreach ($documents as $document) {
-            $this->renderDocument($document, $extractor, $navLinks);
+            $this->renderDocument($document, $extractor);
         }
     }
 
-    private function renderDocument(array $document, PluginConfigfilessccglpiHtmlExtractor $extractor, array $navLinks): void
+    private function renderDocument(array $document, PluginConfigfilessccglpiHtmlExtractor $extractor): void
     {
         $path = GLPI_DOC_DIR . '/' . $document['filepath'];
         if (!is_file($path) || !is_readable($path)) {
@@ -67,7 +45,7 @@ class PluginConfigfilessccglpiRenderer
         }
 
         $raw    = (string) file_get_contents($path);
-        $srcdoc = htmlescape($extractor->buildEmbeddableDocument($raw, $navLinks));
+        $srcdoc = htmlescape($extractor->buildEmbeddableDocument($raw));
 
         $title        = htmlescape($document['name'] !== '' ? $document['name'] : $document['filename']);
         $updatedLabel = htmlescape(__('Last update', 'configfilessccglpi'));
@@ -79,7 +57,7 @@ class PluginConfigfilessccglpiRenderer
         echo "<span class='text-muted small'>{$updatedLabel}: {$updated}</span>";
         echo "</div>";
         echo "<div class='card-body p-0'>";
-        echo "<iframe class='plugin-configfilessccglpi-frame' sandbox='allow-same-origin allow-top-navigation-by-user-activation' "
+        echo "<iframe class='plugin-configfilessccglpi-frame' sandbox='allow-same-origin' "
             . "style='width:100%;border:0;display:block;min-height:200px' "
             . "srcdoc=\"{$srcdoc}\"></iframe>";
         echo "</div></div>";

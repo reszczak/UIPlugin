@@ -6,4 +6,5 @@ return [
     'Configuration file "%s" is referenced in GLPI but missing on disk.'
         => 'Plik konfiguracyjny "%s" jest zarejestrowany w GLPI, ale brakuje go na dysku.',
     'Last update' => 'Ostatnia aktualizacja',
+    'Logbook - %s' => 'Dziennik zdarzeń - %s',
 ];

@@ -3,17 +3,29 @@ class PluginConfigfilessccglpiRenderer
 {
     public function render(Computer $computer): void
     {
-        $documents = (new PluginConfigfilessccglpiDocumentLocator())->findForComputer($computer);
+        $locator   = new PluginConfigfilessccglpiDocumentLocator();
+        $documents = $locator->findForComputer($computer);
 
         if (empty($documents)) {
             $this->renderEmptyState();
             return;
         }
 
+        $logbookUrl = empty($locator->findLogbookForComputer($computer))
+            ? null
+            : $this->logbookUrl($computer);
+
         $extractor = new PluginConfigfilessccglpiHtmlExtractor();
         foreach ($documents as $document) {
-            $this->renderDocument($document, $extractor);
+            $this->renderDocument($document, $extractor, $logbookUrl);
         }
+    }
+
+    private function logbookUrl(Computer $computer): string
+    {
+        global $CFG_GLPI;
+
+        return $CFG_GLPI['url_base'] . '/plugins/configfilessccglpi/front/logbook.php?computers_id=' . $computer->getID();
     }
 
     private function renderEmptyState(): void
@@ -22,7 +34,7 @@ class PluginConfigfilessccglpiRenderer
         echo "<div class='alert alert-info'>{$message}</div>";
     }
 
-    private function renderDocument(array $document, PluginConfigfilessccglpiHtmlExtractor $extractor): void
+    private function renderDocument(array $document, PluginConfigfilessccglpiHtmlExtractor $extractor, ?string $logbookUrl): void
     {
         $path = GLPI_DOC_DIR . '/' . $document['filepath'];
         if (!is_file($path) || !is_readable($path)) {
@@ -35,7 +47,7 @@ class PluginConfigfilessccglpiRenderer
         }
 
         $raw        = (string) file_get_contents($path);
-        $embeddable = $extractor->buildEmbeddableDocument($raw);
+        $embeddable = $extractor->buildEmbeddableDocument($raw, $logbookUrl);
         $srcdoc     = htmlescape($embeddable);
 
         $title        = htmlescape($document['name'] !== '' ? $document['name'] : $document['filename']);
@@ -48,7 +60,7 @@ class PluginConfigfilessccglpiRenderer
         echo "<span class='text-muted small'>{$updatedLabel}: {$updated}</span>";
         echo "</div>";
         echo "<div class='card-body p-0'>";
-        echo "<iframe class='plugin-configfilessccglpi-frame' sandbox='allow-same-origin' "
+        echo "<iframe class='plugin-configfilessccglpi-frame' sandbox='allow-same-origin allow-popups' "
             . "style='width:100%;border:0;display:block;min-height:200px' "
             . "srcdoc=\"{$srcdoc}\"></iframe>";
         echo "</div></div>";

@@ -3,6 +3,16 @@ class PluginConfigfilessccglpiDocumentLocator
 {
     public function findForComputer(Computer $computer): array
     {
+        return $this->findBySuffix($computer, '.html', true);
+    }
+
+    public function findLogbookForComputer(Computer $computer): array
+    {
+        return $this->findBySuffix($computer, '.log.html', false);
+    }
+
+    private function findBySuffix(Computer $computer, string $suffix, bool $excludeLogSuffix): array
+    {
         global $DB;
 
         $computerName = trim((string) ($computer->fields['name'] ?? ''));
@@ -36,17 +46,22 @@ class PluginConfigfilessccglpiDocumentLocator
             ],
         ]);
 
-        $quotedName = preg_quote($computerName, '/');
+        $quotedName   = preg_quote($computerName, '/');
+        $quotedSuffix = preg_quote($suffix, '/');
         $pattern = ($uuid !== '')
-            ? '/^scc\.' . $quotedName . '@' . preg_quote($uuid, '/') . '\.html$/i'
-            : '/^scc\.' . $quotedName . '@.+\.html$/i';
+            ? '/^scc\.' . $quotedName . '@' . preg_quote($uuid, '/') . $quotedSuffix . '$/i'
+            : '/^scc\.' . $quotedName . '@.+' . $quotedSuffix . '$/i';
 
         $matches = [];
         foreach ($iterator as $row) {
             $filename = (string) ($row['filename'] ?? '');
-            if ($filename !== '' && preg_match($pattern, $filename) === 1) {
-                $matches[] = $row;
+            if ($filename === '' || preg_match($pattern, $filename) !== 1) {
+                continue;
             }
+            if ($excludeLogSuffix && str_ends_with(strtolower($filename), '.log.html')) {
+                continue;
+            }
+            $matches[] = $row;
         }
 
         usort($matches, static fn(array $a, array $b) => strcmp((string) $b['date_mod'], (string) $a['date_mod']));

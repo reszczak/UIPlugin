@@ -1,18 +1,19 @@
 <?php
 class PluginConfigfilessccglpiHtmlExtractor
 {
-    public function buildEmbeddableDocument(string $rawHtml): string
+    public function buildEmbeddableDocument(string $rawHtml, ?string $logbookUrl = null): string
     {
-        $body = $this->extractBody($rawHtml);
+        $body = $this->extractBody($rawHtml, $logbookUrl);
         $css  = $this->embedCss();
 
         return '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+            . '<meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<base href="about:srcdoc">'
             . '<style>' . $css . '</style>'
             . '</head><body><div class="scc-embed">' . $body . '</div></body></html>';
     }
 
-    private function extractBody(string $rawHtml): string
+    private function extractBody(string $rawHtml, ?string $logbookUrl): string
     {
         if (trim($rawHtml) === '') {
             return '';
@@ -43,6 +44,16 @@ class PluginConfigfilessccglpiHtmlExtractor
             $href = $anchor->getAttribute('href');
             if ($href !== '' && $href[0] !== '#') {
                 $anchor->removeAttribute('href');
+            }
+        }
+
+        if ($logbookUrl !== null) {
+            foreach ($dom->getElementsByTagName('a') as $anchor) {
+                if (strtolower(trim($anchor->textContent)) === 'logbook') {
+                    $anchor->setAttribute('href', $logbookUrl);
+                    $anchor->setAttribute('target', '_blank');
+                    $anchor->setAttribute('rel', 'noopener');
+                }
             }
         }
 

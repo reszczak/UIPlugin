@@ -52,30 +52,6 @@
         });
     }
 
-    function bindCrossPaneLink(iframe, card) {
-        var pane = iframe.dataset.sccPane;
-        if (!pane) {
-            return;
-        }
-        try {
-            var doc = iframe.contentDocument;
-            if (!doc) {
-                return;
-            }
-            var targetPane  = pane === 'config' ? 'log' : 'config';
-            var targetLabel = pane === 'config' ? 'logbook' : 'configuration';
-            doc.querySelectorAll('a').forEach(function (a) {
-                if (a.textContent.trim().toLowerCase() === targetLabel) {
-                    a.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        showPane(card, targetPane);
-                    });
-                }
-            });
-        } catch (e) {
-        }
-    }
-
     function bindAll() {
         document.querySelectorAll('iframe.plugin-configfilessccglpi-frame:not([data-scc-bound])').forEach(function (iframe) {
             iframe.dataset.sccBound = '1';
@@ -85,7 +61,6 @@
                 var card = iframe.closest('.card');
                 if (card) {
                     bindSubtabButtons(card);
-                    bindCrossPaneLink(iframe, card);
                 }
             });
         });

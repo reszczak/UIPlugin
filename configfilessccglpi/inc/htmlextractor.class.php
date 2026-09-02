@@ -1,9 +1,11 @@
 <?php
 class PluginConfigfilessccglpiHtmlExtractor
 {
-    public function buildEmbeddableDocument(string $rawHtml, ?string $homeUrl = null): string
+    private const STRIPPED_NAV_CLASSES = ['scc_snap_nav', 'scc_log_nav'];
+
+    public function buildEmbeddableDocument(string $rawHtml): string
     {
-        $body = $this->extractBody($rawHtml, $homeUrl);
+        $body = $this->extractBody($rawHtml);
         $css  = $this->embedCss();
 
         return '<!DOCTYPE html><html><head><meta charset="UTF-8">'
@@ -13,7 +15,7 @@ class PluginConfigfilessccglpiHtmlExtractor
             . '</head><body><div class="scc-embed">' . $body . '</div></body></html>';
     }
 
-    private function extractBody(string $rawHtml, ?string $homeUrl): string
+    private function extractBody(string $rawHtml): string
     {
         if (trim($rawHtml) === '') {
             return '';
@@ -49,19 +51,21 @@ class PluginConfigfilessccglpiHtmlExtractor
             }
         }
 
+        $navDivs = [];
+        foreach ($dom->getElementsByTagName('div') as $div) {
+            $class = strtolower(trim($div->getAttribute('class')));
+            if (in_array($class, self::STRIPPED_NAV_CLASSES, true)) {
+                $navDivs[] = $div;
+            }
+        }
+        foreach ($navDivs as $div) {
+            $div->parentNode?->removeChild($div);
+        }
+
         foreach ($dom->getElementsByTagName('a') as $anchor) {
             $href = $anchor->getAttribute('href');
             if ($href !== '' && $href[0] !== '#') {
                 $anchor->removeAttribute('href');
-            }
-        }
-
-        if ($homeUrl !== null) {
-            foreach ($dom->getElementsByTagName('a') as $anchor) {
-                if (strtolower(trim($anchor->textContent)) === 'home') {
-                    $anchor->setAttribute('href', $homeUrl);
-                    $anchor->setAttribute('target', '_top');
-                }
             }
         }
 

@@ -3,6 +3,25 @@ class PluginConfigfilessccglpiHtmlExtractor
 {
     private const STRIPPED_NAV_CLASSES = ['scc_snap_nav', 'scc_log_nav'];
 
+    /**
+     * Dropped with their whole subtree: each of these can only ever pull outside
+     * code, an outside document or a navigation target into the embed, never
+     * content worth keeping.
+     */
+    private const STRIPPED_TAGS = [
+        'script', 'link', 'style', 'meta', 'base',
+        'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'area',
+    ];
+
+    /**
+     * Dropped while their children stay in place: a <form> is only dangerous as
+     * an element (action/formaction), while its content may well be the report
+     * itself -- removing the subtree would silently blank the embed.
+     */
+    private const UNWRAPPED_TAGS = ['form'];
+
+    private const SCRIPT_SCHEMES = ['javascript:', 'vbscript:'];
+
     public function buildEmbeddableDocument(string $rawHtml): string
     {
         $body = $this->extractBody($rawHtml);
@@ -34,40 +53,14 @@ class PluginConfigfilessccglpiHtmlExtractor
             return '';
         }
 
-        foreach (['script', 'link', 'style'] as $tag) {
-            $nodes = $dom->getElementsByTagName($tag);
-            for ($i = $nodes->length - 1; $i >= 0; $i--) {
-                $node = $nodes->item($i);
-                $node->parentNode?->removeChild($node);
-            }
+        foreach ($this->collectByLocalName($dom, self::STRIPPED_TAGS) as $element) {
+            $element->parentNode?->removeChild($element);
         }
 
-        foreach ($dom->getElementsByTagName('*') as $element) {
-            for ($i = $element->attributes->length - 1; $i >= 0; $i--) {
-                $name = $element->attributes->item($i)->name;
-                if (stripos($name, 'on') === 0) {
-                    $element->removeAttribute($name);
-                }
-            }
-        }
-
-        $navDivs = [];
-        foreach ($dom->getElementsByTagName('div') as $div) {
-            $class = strtolower(trim($div->getAttribute('class')));
-            if (in_array($class, self::STRIPPED_NAV_CLASSES, true)) {
-                $navDivs[] = $div;
-            }
-        }
-        foreach ($navDivs as $div) {
-            $div->parentNode?->removeChild($div);
-        }
-
-        foreach ($dom->getElementsByTagName('a') as $anchor) {
-            $href = $anchor->getAttribute('href');
-            if ($href !== '' && $href[0] !== '#') {
-                $anchor->removeAttribute('href');
-            }
-        }
+        $this->unwrapElements($dom);
+        $this->stripDangerousAttributes($dom);
+        $this->stripNavigation($dom);
+        $this->stripLeavingLinks($dom);
 
         $body = $dom->getElementsByTagName('body')->item(0);
         if ($body === null) {
@@ -80,6 +73,103 @@ class PluginConfigfilessccglpiHtmlExtractor
         }
 
         return $html;
+    }
+
+    /**
+     * Matches on the local name, so a namespaced <svg:script> -- which
+     * getElementsByTagName('script') would never return -- is caught as well.
+     * Everything is collected before anything is removed, because the
+     * DOMNodeList walked here is live.
+     *
+     * @param string[] $names
+     * @return DOMElement[]
+     */
+    private function collectByLocalName(DOMDocument $dom, array $names): array
+    {
+        $found = [];
+        foreach ($dom->getElementsByTagName('*') as $element) {
+            $name  = strtolower($element->nodeName);
+            $colon = strrpos($name, ':');
+            if ($colon !== false) {
+                $name = substr($name, $colon + 1);
+            }
+            if (in_array($name, $names, true)) {
+                $found[] = $element;
+            }
+        }
+
+        return $found;
+    }
+
+    private function unwrapElements(DOMDocument $dom): void
+    {
+        foreach ($this->collectByLocalName($dom, self::UNWRAPPED_TAGS) as $element) {
+            $parent = $element->parentNode;
+            if ($parent === null) {
+                continue;
+            }
+            while ($element->firstChild !== null) {
+                $parent->insertBefore($element->firstChild, $element);
+            }
+            $parent->removeChild($element);
+        }
+    }
+
+    /**
+     * Removes every event handler (any attribute named on*) plus every attribute
+     * whose value is a scripting URL -- src, data, action, formaction,
+     * xlink:href and friends, not just <a href>.
+     */
+    private function stripDangerousAttributes(DOMDocument $dom): void
+    {
+        foreach ($dom->getElementsByTagName('*') as $element) {
+            for ($i = $element->attributes->length - 1; $i >= 0; $i--) {
+                $attribute = $element->attributes->item($i);
+                if (stripos($attribute->name, 'on') === 0 || $this->isScriptUrl($attribute->value)) {
+                    $element->removeAttribute($attribute->name);
+                }
+            }
+        }
+    }
+
+    /**
+     * Browsers ignore whitespace and control characters while resolving a URL
+     * scheme, so "java\tscript:alert(1)" runs. Drop them all before comparing.
+     */
+    private function isScriptUrl(string $value): bool
+    {
+        $normalized = strtolower((string) preg_replace('/[\x00-\x20]+/', '', $value));
+        foreach (self::SCRIPT_SCHEMES as $scheme) {
+            if (str_starts_with($normalized, $scheme)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function stripNavigation(DOMDocument $dom): void
+    {
+        $navDivs = [];
+        foreach ($dom->getElementsByTagName('div') as $div) {
+            $class = strtolower(trim($div->getAttribute('class')));
+            if (in_array($class, self::STRIPPED_NAV_CLASSES, true)) {
+                $navDivs[] = $div;
+            }
+        }
+        foreach ($navDivs as $div) {
+            $div->parentNode?->removeChild($div);
+        }
+    }
+
+    private function stripLeavingLinks(DOMDocument $dom): void
+    {
+        foreach ($dom->getElementsByTagName('a') as $anchor) {
+            $href = $anchor->getAttribute('href');
+            if ($href !== '' && $href[0] !== '#') {
+                $anchor->removeAttribute('href');
+            }
+        }
     }
 
     private function embedCss(): string

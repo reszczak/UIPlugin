@@ -3,21 +3,11 @@ class PluginConfigfilessccglpiHtmlExtractor
 {
     private const STRIPPED_NAV_CLASSES = ['scc_snap_nav', 'scc_log_nav'];
 
-    /**
-     * Dropped with their whole subtree: each of these can only ever pull outside
-     * code, an outside document or a navigation target into the embed, never
-     * content worth keeping.
-     */
     private const STRIPPED_TAGS = [
         'script', 'link', 'style', 'meta', 'base',
         'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'area',
     ];
 
-    /**
-     * Dropped while their children stay in place: a <form> is only dangerous as
-     * an element (action/formaction), while its content may well be the report
-     * itself -- removing the subtree would silently blank the embed.
-     */
     private const UNWRAPPED_TAGS = ['form'];
 
     private const SCRIPT_SCHEMES = ['javascript:', 'vbscript:'];
@@ -75,15 +65,6 @@ class PluginConfigfilessccglpiHtmlExtractor
         return $html;
     }
 
-    /**
-     * Matches on the local name, so a namespaced <svg:script> -- which
-     * getElementsByTagName('script') would never return -- is caught as well.
-     * Everything is collected before anything is removed, because the
-     * DOMNodeList walked here is live.
-     *
-     * @param string[] $names
-     * @return DOMElement[]
-     */
     private function collectByLocalName(DOMDocument $dom, array $names): array
     {
         $found = [];
@@ -115,11 +96,6 @@ class PluginConfigfilessccglpiHtmlExtractor
         }
     }
 
-    /**
-     * Removes every event handler (any attribute named on*) plus every attribute
-     * whose value is a scripting URL -- src, data, action, formaction,
-     * xlink:href and friends, not just <a href>.
-     */
     private function stripDangerousAttributes(DOMDocument $dom): void
     {
         foreach ($dom->getElementsByTagName('*') as $element) {
@@ -132,10 +108,6 @@ class PluginConfigfilessccglpiHtmlExtractor
         }
     }
 
-    /**
-     * Browsers ignore whitespace and control characters while resolving a URL
-     * scheme, so "java\tscript:alert(1)" runs. Drop them all before comparing.
-     */
     private function isScriptUrl(string $value): bool
     {
         $normalized = strtolower((string) preg_replace('/[\x00-\x20]+/', '', $value));

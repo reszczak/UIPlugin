@@ -90,25 +90,6 @@ class PluginUploadsccglpiConfig
         return (int) ini_get('max_file_uploads');
     }
 
-    public function phpLimitBelowSetting(): bool
-    {
-        $php = $this->phpMaxFiles();
-
-        return $php > 0 && $php < $this->maxFiles();
-    }
-
-    public function effectiveMaxSizeBytes(): int
-    {
-        $limits = [$this->maxSizeBytes()];
-        foreach (['upload_max_filesize', 'post_max_size'] as $directive) {
-            $bytes = self::iniBytes((string) ini_get($directive));
-            if ($bytes > 0) {
-                $limits[] = $bytes;
-            }
-        }
-        return min($limits);
-    }
-
     public static function iniBytes(string $raw): int
     {
         $raw = trim($raw);
@@ -132,19 +113,6 @@ class PluginUploadsccglpiConfig
     public function newestVersionFor(string $os): ?string
     {
         return $this->agentVersions()['versions'][$os]['version'] ?? null;
-    }
-
-    public function oldestAcceptedVersion(string $os): ?string
-    {
-        $newest = $this->newestVersionFor($os);
-        if ($newest === null) {
-            return null;
-        }
-
-        $parts = explode('.', $newest);
-        $parts[count($parts) - 1] = (string) max(0, (int) end($parts) - ($this->versionMaxGap() - 1));
-
-        return implode('.', $parts);
     }
 
     public function versionMaxGap(): int

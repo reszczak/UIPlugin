@@ -25,14 +25,11 @@ class PluginUploadsccglpiAgentVersions
         'windows' => self::OS_WINDOWS,
     ];
 
-    private const PATTERNS = [
-        self::OS_UNIX    => '/(?:linux|unix)/i',
-        self::OS_WINDOWS => '/windows/i',
-    ];
+    private const PLATFORMS = [self::OS_UNIX, self::OS_WINDOWS];
 
     public static function platforms(): array
     {
-        return array_keys(self::PATTERNS);
+        return self::PLATFORMS;
     }
 
     public static function platformName(string $os): string
@@ -48,11 +45,11 @@ class PluginUploadsccglpiAgentVersions
         $t = static fn(string $s) => __($s, 'uploadsccglpi');
 
         return match ($state['issue']) {
-            self::ISSUE_MISSING    => sprintf($t('The knowledge base article "%s" was not found. The last saved versions stay in force until it is back.'), self::KB_TITLE),
-            self::ISSUE_RENAMED    => sprintf($t('The knowledge base article was renamed to "%s". Versions are still read from it, but give it back the title "%s" so it is found by name.'), $state['article']['name'] ?? '', self::KB_TITLE),
-            self::ISSUE_UNPARSED   => sprintf($t('No version could be read from the knowledge base article "%s" - its content has changed. The last saved versions stay in force.'), self::KB_TITLE),
-            self::ISSUE_INCOMPLETE => sprintf($t('The knowledge base article "%s" does not state a version for every system. For those, the last saved version stays in force.'), self::KB_TITLE),
-            self::ISSUE_ERROR      => sprintf($t('The knowledge base article "%s" could not be read because of a database error. The last saved versions stay in force.'), self::KB_TITLE),
+            self::ISSUE_MISSING    => sprintf($t('Article "%s" not found - the last saved versions apply.'), self::KB_TITLE),
+            self::ISSUE_RENAMED    => sprintf($t('Article renamed to "%s".'), $state['article']['name'] ?? ''),
+            self::ISSUE_UNPARSED   => sprintf($t('No version could be read from article "%s" - the last saved versions apply.'), self::KB_TITLE),
+            self::ISSUE_INCOMPLETE => sprintf($t('Article "%s" does not give a version for every system.'), self::KB_TITLE),
+            self::ISSUE_ERROR      => sprintf($t('Article "%s" could not be read - the last saved versions apply.'), self::KB_TITLE),
             default                => '',
         };
     }
@@ -227,36 +224,37 @@ class PluginUploadsccglpiAgentVersions
 
     public static function parse(string $answer): array
     {
-        $out = [];
-        foreach (self::toLines($answer) as $line) {
-            if (preg_match('/(\d+(?:\.\d+)+)/', $line, $m) !== 1) {
-                continue;
-            }
-            $version = $m[1];
+        $out     = [];
+        $current = null;
 
-            foreach (self::PATTERNS as $os => $pattern) {
-                if (!isset($out[$os]) && preg_match($pattern, $line) === 1) {
-                    $out[$os] = $version;
-                }
+        preg_match_all('/(linux|unix)|(windows)|(\d+(?:\.\d+)+)/i', self::toText($answer), $matches, PREG_SET_ORDER);
+        foreach ($matches as $m) {
+            if (($m[1] ?? '') !== '') {
+                $current = self::OS_UNIX;
+            } elseif (($m[2] ?? '') !== '') {
+                $current = self::OS_WINDOWS;
+            } elseif ($current !== null) {
+                $out[$current] ??= $m[3];
+                $current = null;
             }
         }
 
         return $out;
     }
 
-    private static function toLines(string $answer): array
+    private static function toText(string $answer): string
     {
-        $text = preg_replace('#<\s*(br|/p|/div|/li|/tr|/h[1-6])\s*/?\s*>#i', "\n", $answer) ?? $answer;
-        $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-        $lines = [];
-        foreach (preg_split('/\R/', $text) ?: [] as $line) {
-            $line = trim($line);
-            if ($line !== '') {
-                $lines[] = $line;
+        $text = $answer;
+        for ($i = 0; $i < 3; $i++) {
+            $decoded = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if ($decoded === $text) {
+                break;
             }
+            $text = $decoded;
         }
 
-        return $lines;
+        $text = preg_replace('/<[^>]*>/', ' ', $text) ?? $text;
+
+        return preg_replace('/[\s\x{00A0}]+/u', ' ', $text) ?? $text;
     }
 }

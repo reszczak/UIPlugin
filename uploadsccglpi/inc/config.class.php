@@ -30,7 +30,7 @@ class PluginUploadsccglpiConfig
 
     public function storageDir(): string
     {
-        return GLPI_DOC_DIR . '/_plugins/uploadsccglpi';
+        return '/glpi/data/transfer';
     }
 
     public function archiveExtensions(): array

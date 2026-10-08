@@ -59,6 +59,19 @@ function plugin_uploadsccglpi_install()
         }
     }
 
+    $legacy = [];
+    foreach ($DB->request(['FROM' => $table, 'WHERE' => ['pair_key' => '']]) as $row) {
+        $stem = preg_replace('/\.(tar\.gz|gz|signal)$/i', '', (string) $row['filename']) ?? (string) $row['filename'];
+        $group = mb_strtolower($stem) . '|' . $row['users_id'] . '|' . $row['date_creation'];
+        $legacy[$group][] = ['id' => (int) $row['id'], 'stem' => $stem];
+    }
+    foreach ($legacy as $group => $rows) {
+        $key = $rows[0]['stem'] . '#' . substr(md5($group), 0, 13);
+        foreach ($rows as $row) {
+            $DB->update($table, ['pair_key' => $key], ['id' => $row['id']]);
+        }
+    }
+
     $versions = PLUGIN_UPLOADSCCGLPI_VERSIONS_TABLE;
     if (!$DB->tableExists($versions)) {
         $DB->doQuery("CREATE TABLE `{$versions}` (
@@ -71,6 +84,29 @@ function plugin_uploadsccglpi_install()
             PRIMARY KEY (`id`),
             UNIQUE KEY `platform` (`platform`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    }
+
+    $history = PLUGIN_UPLOADSCCGLPI_HISTORY_TABLE;
+    if (!$DB->tableExists($history)) {
+        $DB->doQuery("CREATE TABLE `{$history}` (
+            `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `platform` VARCHAR(32) NOT NULL DEFAULT '',
+            `version` VARCHAR(32) NOT NULL DEFAULT '',
+            `knowbaseitems_id` INT UNSIGNED NOT NULL DEFAULT 0,
+            `date_creation` TIMESTAMP NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            KEY `platform` (`platform`),
+            KEY `date_creation` (`date_creation`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        foreach ($DB->request(['FROM' => PLUGIN_UPLOADSCCGLPI_VERSIONS_TABLE]) as $row) {
+            $DB->insert($history, [
+                'platform'         => $row['platform'],
+                'version'          => $row['version'],
+                'knowbaseitems_id' => $row['knowbaseitems_id'],
+                'date_creation'    => $row['date_mod'],
+            ]);
+        }
     }
 
     PluginUploadsccglpiAgentVersions::sync();
@@ -100,7 +136,7 @@ function plugin_uploadsccglpi_uninstall()
 {
     global $DB;
 
-    foreach ([PLUGIN_UPLOADSCCGLPI_TABLE, PLUGIN_UPLOADSCCGLPI_VERSIONS_TABLE] as $table) {
+    foreach ([PLUGIN_UPLOADSCCGLPI_TABLE, PLUGIN_UPLOADSCCGLPI_VERSIONS_TABLE, PLUGIN_UPLOADSCCGLPI_HISTORY_TABLE] as $table) {
         if ($DB->tableExists($table)) {
             $DB->doQuery('DROP TABLE `' . $table . '`');
         }

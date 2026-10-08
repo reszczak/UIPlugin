@@ -4,6 +4,10 @@ class PluginUploadsccglpiUploadedFile extends CommonDBTM
 {
     public static $rightname = 'document';
 
+    public const SCOPE_ALL = 'all';
+
+    private const LIST_SCOPE_KEY = 'plugin_uploadsccglpi_list_scope';
+
     public static function getTable($classname = null)
     {
         return PLUGIN_UPLOADSCCGLPI_TABLE;
@@ -28,6 +32,10 @@ class PluginUploadsccglpiUploadedFile extends CommonDBTM
 
     public static function getMenuContent()
     {
+        if (!self::canUpload()) {
+            return false;
+        }
+
         return [
             'title' => self::getMenuName(),
             'page'  => '/plugins/uploadsccglpi/front/upload.form.php',
@@ -40,9 +48,118 @@ class PluginUploadsccglpiUploadedFile extends CommonDBTM
         return Session::haveRight(self::$rightname, READ);
     }
 
+    public static function computerEntities(string $uuid): array
+    {
+        global $DB;
+
+        $entities = [];
+        foreach ($DB->request([
+            'SELECT'   => ['entities_id'],
+            'DISTINCT' => true,
+            'FROM'     => Computer::getTable(),
+            'WHERE'    => [
+                'uuid'        => $uuid,
+                'is_deleted'  => 0,
+                'is_template' => 0,
+            ],
+        ]) as $row) {
+            $entities[] = (int) $row['entities_id'];
+        }
+
+        return $entities;
+    }
+
     public static function canSeeEveryUpload(): bool
     {
         return Session::haveRight('config', UPDATE);
+    }
+
+    public static function canPurge(): bool
+    {
+        return self::canSeeEveryUpload() && parent::canPurge();
+    }
+
+    public static function listedUserId(): ?int
+    {
+        if (!self::canSeeEveryUpload()) {
+            return (int) Session::getLoginUserID();
+        }
+
+        $stored = (int) ($_SESSION[self::LIST_SCOPE_KEY] ?? 0);
+
+        return $stored > 0 ? $stored : null;
+    }
+
+    public static function listsEveryUpload(): bool
+    {
+        return self::listedUserId() === null;
+    }
+
+    public static function setListScope(string $scope): void
+    {
+        if (!self::canSeeEveryUpload()) {
+            return;
+        }
+
+        if ($scope === self::SCOPE_ALL) {
+            unset($_SESSION[self::LIST_SCOPE_KEY]);
+        } elseif (ctype_digit($scope) && self::isSelectableUser((int) $scope)) {
+            $_SESSION[self::LIST_SCOPE_KEY] = (int) $scope;
+        }
+    }
+
+    private static function userQuery(array $conditions, int $limit): array
+    {
+        global $DB;
+
+        $users    = User::getTable();
+        $profiles = Profile_User::getTable();
+
+        $found = [];
+        foreach ($DB->request([
+            'SELECT'     => ["{$users}.id"],
+            'DISTINCT'   => true,
+            'FROM'       => $users,
+            'INNER JOIN' => [
+                $profiles => ['ON' => [$users => 'id', $profiles => 'users_id']],
+            ],
+            'WHERE'      => array_merge(
+                ["{$users}.is_deleted" => 0, getEntitiesRestrictCriteria($profiles, '', '', true)],
+                $conditions
+            ),
+            'ORDER'      => ["{$users}.name"],
+            'LIMIT'      => $limit,
+        ]) as $row) {
+            $found[] = (int) $row['id'];
+        }
+
+        return $found;
+    }
+
+    public static function isSelectableUser(int $userId): bool
+    {
+        return $userId > 0 && self::userQuery([User::getTable() . '.id' => $userId], 1) !== [];
+    }
+
+    public static function searchUsers(string $query, int $limit = 20): array
+    {
+        $words = preg_split('/\s+/u', trim($query), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if ($words === []) {
+            return [];
+        }
+
+        $users      = User::getTable();
+        $conditions = [];
+        foreach (array_slice($words, 0, 5) as $word) {
+            $like         = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $word) . '%';
+            $conditions[] = ['OR' => [
+                "{$users}.name"      => ['LIKE', $like],
+                "{$users}.realname"  => ['LIKE', $like],
+                "{$users}.firstname" => ['LIKE', $like],
+            ]];
+        }
+
+        return self::userQuery($conditions, $limit + 1);
     }
 
     private function isOwnedByCurrentUser(): bool
@@ -52,14 +169,12 @@ class PluginUploadsccglpiUploadedFile extends CommonDBTM
 
     public function canViewItem(): bool
     {
-        return parent::canViewItem()
-            && (self::canSeeEveryUpload() || $this->isOwnedByCurrentUser());
+        return self::canSeeEveryUpload() ? parent::canViewItem() : $this->isOwnedByCurrentUser();
     }
 
     public function canPurgeItem(): bool
     {
-        return parent::canPurgeItem()
-            && (self::canSeeEveryUpload() || $this->isOwnedByCurrentUser());
+        return self::canSeeEveryUpload() && parent::canPurgeItem();
     }
 
     public static function siblingIds(array $fields): array
@@ -85,13 +200,16 @@ class PluginUploadsccglpiUploadedFile extends CommonDBTM
 
     private static function visibilityCriteria(): array
     {
-        $criteria = getEntitiesRestrictCriteria(self::getTable(), '', '', true);
+        $userId = self::listedUserId();
+        $own    = [self::getTable() . '.users_id' => (int) $userId];
 
-        if (!self::canSeeEveryUpload()) {
-            $criteria[self::getTable() . '.users_id'] = (int) Session::getLoginUserID();
+        if (!self::canSeeEveryUpload() || $userId === (int) Session::getLoginUserID()) {
+            return $own;
         }
 
-        return $criteria;
+        $entities = getEntitiesRestrictCriteria(self::getTable(), '', '', true);
+
+        return $userId === null ? $entities : $entities + $own;
     }
 
     public static function findVisible(int $limit = 100): array

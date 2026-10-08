@@ -19,6 +19,15 @@ return [
     'Pairs uploaded: %d' => 'Wgrane pary: %d',
     'Unrecognised extension.' => 'Nierozpoznane rozszerzenie.',
     'Upload log' => 'Rejestr wgrań',
+    'Entries to show' => 'Liczba wpisów',
+    'Search user...' => 'Szukaj użytkownika...',
+    'Search user' => 'Szukaj użytkownika',
+    'No matching user found.' => 'Nie znaleziono użytkownika.',
+    'Pick a user:' => 'Wybierz użytkownika:',
+    'No user matches "%s".' => 'Żaden użytkownik nie pasuje do „%s".',
+    'Show every user' => 'Pokaż wszystkich użytkowników',
+    'Showing the first %d matches - narrow your search.' => 'Pokazano pierwsze %d wyników – zawęź wyszukiwanie.',
+    'Files uploaded by %s are listed.' => 'Widzisz pliki wgrane przez: %s.',
     'Only the %d most recent entries are listed.' => 'Wyświetlanych jest tylko %d ostatnich wpisów.',
     'Host' => 'Host',
     'Two files of the same kind for one host - a pair is one archive and one %s file.'
@@ -41,10 +50,10 @@ return [
     'The scc.conf version (fix:general::scc.conf:version) is missing from the .cur file.'
         => 'Brak wersji scc.conf (fix:general::scc.conf:version) w pliku .cur.',
     'The scc.conf version "%s" could not be read.' => 'Nie udało się odczytać wersji scc.conf "%s".',
-    'The scc.conf version %s is too far behind %s, the current one for %s.'
-        => 'Wersja scc.conf %s jest zbyt odległa od %s, bieżącej dla %s.',
-    'The scc.conf version %s is %d behind %s, the current one for %s; at most %d is allowed.'
-        => 'Wersja scc.conf %s jest o %d starsza od %s, bieżącej dla %s; dopuszczalne jest najwyżej %d.',
+    'The agent version %s is too old for %s - the minimum accepted version is %s.'
+        => 'Wersja agenta %s jest za stara dla %s – minimalna dopuszczalna wersja to %s.',
+    'The agent version %s is newer than allowed for %s - the maximum accepted version is %s.'
+        => 'Wersja agenta %s jest nowsza niż dopuszczalna dla %s – maksymalna dopuszczalna wersja to %s.',
     'The system category (fix:general::scc.conf:os_category) is missing from the .cur file.'
         => 'Brak kategorii systemu (fix:general::scc.conf:os_category) w pliku .cur.',
     'Unknown system category "%s" - expected one of: %s.'
@@ -59,6 +68,18 @@ return [
     'No newest agent version is known for %s - the "%s" knowledge base article could not be read. Contact your GLPI administrator.'
         => 'Nie jest znana najnowsza wersja agenta dla %s – nie udało się odczytać wpisu bazy wiedzy „%s". Skontaktuj się z administratorem GLPI.',
     'Maximum version gap' => 'Maksymalna różnica wersji',
+    'Newest' => 'Najnowsza',
+    'Configuration' => 'Konfiguracja',
+    'Minimum version' => 'Minimalna wersja',
+    'Comma-separated, e.g. tar.gz,gz.' => 'Oddzielone przecinkami, np. tar.gz,gz.',
+    'Every archive must come with a file with this extension and the same name.'
+        => 'Każdemu archiwum musi towarzyszyć plik o tej samej nazwie i tym rozszerzeniu.',
+    'Applies to each file separately.' => 'Dotyczy każdego pliku osobno.',
+    'Archives and marker files together, in one upload.' => 'Archiwa i pliki sygnału łącznie, w jednym wgraniu.',
+    'Counted from the inventory date in the .cur file.' => 'Liczony od daty inwentaryzacji zapisanej w pliku .cur.',
+    'Counted from the newest version in the knowledge base; with 3, the newest and the two previous ones are accepted.'
+        => 'Liczona od najnowszej wersji z bazy wiedzy; przy 3 przechodzi najnowsza i dwie poprzednie.',
+    'Agent version history' => 'Historia wersji agenta',
     'Files' => 'Pliki',
     'incomplete pair' => 'niekompletna para',
     'Archive extensions' => 'Rozszerzenia archiwum',
@@ -86,4 +107,12 @@ return [
         => 'Wpis „%s" nie podaje wersji dla wszystkich systemów.',
     'Article "%s" could not be read - the last saved versions apply.'
         => 'Błąd odczytu wpisu „%s" – obowiązują ostatnio zapisane wersje.',
+    'The host UUID could not be determined from the .cur file or the file name.'
+        => 'Nie udało się ustalić UUID hosta ani z pliku .cur, ani z nazwy pliku.',
+    'You do not have permission to the IT system of this host.'
+        => 'Nie masz uprawnień do systemu informatycznego tego hosta.',
+    'The inventory date %s is in the future.' => 'Data inwentaryzacji %s jest z przyszłości.',
+    'Article "%s" not found and no earlier version is saved.' => 'Nie znaleziono wpisu „%s" i nie zapisano żadnej wcześniejszej wersji.',
+    'Some values were invalid or out of range and were adjusted - check the form.' => 'Część wartości była nieprawidłowa lub spoza zakresu i została skorygowana – sprawdź formularz.',
+    'Remove this pair from the log? The files on disk are not deleted.' => 'Usunąć tę parę z rejestru? Pliki na dysku nie zostaną usunięte.',
 ];

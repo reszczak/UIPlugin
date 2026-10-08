@@ -1,13 +1,20 @@
 <?php
 class PluginUploadsccglpiUploadPanel
 {
-    private const LIST_LIMIT = 100;
+    private const LIST_LIMITS        = [10, 25, 50, 100, 200, 500];
+    private const LIST_LIMIT_DEFAULT = 100;
+    private const LIST_LIMIT_KEY     = 'plugin_uploadsccglpi_list_limit';
+    private const USER_SEARCH_LIMIT  = 20;
 
     private const REPORT_KEY = 'plugin_uploadsccglpi_report';
 
     private PluginUploadsccglpiConfig $config;
     private PluginUploadsccglpiStorage $storage;
     private PluginUploadsccglpiInventoryCheck $check;
+
+    private string $userSearch = '';
+
+    private array $userMatches = [];
 
     public function __construct(?PluginUploadsccglpiConfig $config = null)
     {
@@ -61,7 +68,9 @@ class PluginUploadsccglpiUploadPanel
         }
 
         if (isset($_POST['delete'])) {
-            Session::checkRight(PluginUploadsccglpiUploadedFile::$rightname, PURGE);
+            if (!PluginUploadsccglpiUploadedFile::canPurge()) {
+                Html::displayRightError();
+            }
             $this->handleDelete((int) $_POST['delete']);
             Html::redirect($self);
         }
@@ -104,7 +113,7 @@ class PluginUploadsccglpiUploadPanel
         foreach ($pairs as $pair) {
             $files = [$pair['archive']['name'], $pair['signal']['name']];
 
-            $reason = $this->check->check((string) $pair['archive']['upload']['tmp_name']);
+            $reason = $this->check->check((string) $pair['archive']['upload']['tmp_name'], $pair['stem']);
             if ($reason !== '') {
                 $report[] = self::reportRow($pair['stem'], $files, false, $reason);
                 continue;
@@ -132,13 +141,15 @@ class PluginUploadsccglpiUploadPanel
         $signal   = $this->config->signalExtension();
         $known    = $this->config->allowedExtensions();
 
-        $groups = [];
+        $groups   = [];
+        $rejected = [];
         foreach ($uploads as $upload) {
             $name = (string) ($upload['name'] ?? '');
 
             $rejection = $this->storage->validate($upload);
             if ($rejection !== '') {
                 $report[] = self::reportRow($name, [$name], false, $rejection);
+                $rejected[mb_strtolower(PluginUploadsccglpiStorage::splitName($name, $known)['stem'])] = true;
                 continue;
             }
 
@@ -167,6 +178,9 @@ class PluginUploadsccglpiUploadPanel
         $pairs = [];
         foreach ($groups as $group) {
             $stem = (string) $group['stem'];
+            if (isset($rejected[mb_strtolower($stem)]) && (!isset($group['archive']) || !isset($group['signal']))) {
+                continue;
+            }
             if (!isset($group['archive'])) {
                 $report[] = self::reportRow(
                     $stem,
@@ -336,8 +350,10 @@ class PluginUploadsccglpiUploadPanel
         $acceptH = htmlescape($accept);
 
         echo "<div class='card m-4'>";
-        echo "<div class='card-header'><h3 class='card-title'>"
-            . "<i class='ti ti-cloud-upload me-2'></i>{$title}</h3></div>";
+        echo "<div class='card-header d-flex justify-content-between align-items-center flex-wrap gap-2'>"
+            . "<h3 class='card-title mb-0'><i class='ti ti-cloud-upload me-2'></i>{$title}</h3>";
+        $this->renderSettingsButton();
+        echo "</div>";
         echo "<div class='card-body'>";
         echo "<p class='text-muted'>{$intro}</p>";
 
@@ -359,6 +375,19 @@ class PluginUploadsccglpiUploadPanel
         }
 
         echo "</div></div>";
+    }
+
+    private function renderSettingsButton(): void
+    {
+        global $CFG_GLPI;
+
+        if (!Session::haveRight('config', UPDATE)) {
+            return;
+        }
+
+        $url = ($CFG_GLPI['root_doc'] ?? '') . '/plugins/uploadsccglpi/front/config.form.php';
+        echo "<a href='" . htmlescape($url) . "' class='btn btn-outline-secondary btn-sm'>"
+            . "<i class='ti ti-settings me-1'></i>" . htmlescape(self::t('Configuration')) . "</a>";
     }
 
     private function renderAgentVersions(): void
@@ -455,24 +484,220 @@ class PluginUploadsccglpiUploadPanel
         echo "</div></div>";
     }
 
+    private static function listLimit(): int
+    {
+        if (isset($_GET['list_limit'])) {
+            $requested = (int) $_GET['list_limit'];
+            if (in_array($requested, self::LIST_LIMITS, true)) {
+                $_SESSION[self::LIST_LIMIT_KEY] = $requested;
+            }
+        }
+
+        $stored = (int) ($_SESSION[self::LIST_LIMIT_KEY] ?? 0);
+
+        return in_array($stored, self::LIST_LIMITS, true) ? $stored : self::LIST_LIMIT_DEFAULT;
+    }
+
+    private function renderLimitSelect(string $self, int $limit): void
+    {
+        $label = htmlescape(self::t('Entries to show'));
+
+        echo "<form method='get' action='" . htmlescape($self) . "' class='d-flex align-items-center gap-2 flex-wrap'>";
+        if (PluginUploadsccglpiUploadedFile::canSeeEveryUpload()) {
+            $listed = PluginUploadsccglpiUploadedFile::listedUserId();
+            if ($listed !== null) {
+                echo "<span class='badge bg-blue-lt fs-6 fw-normal'><i class='ti ti-user me-1'></i>"
+                    . htmlescape(getUserName($listed))
+                    . " <a href='" . htmlescape($self . '?list_scope=all') . "' class='ms-1 text-reset' title='"
+                    . htmlescape(self::t('Show every user')) . "'><i class='ti ti-x'></i></a></span>";
+            }
+            echo "<div class='position-relative'>";
+            echo "<input type='search' id='uploadsccglpi_user_search' name='list_user_search' autocomplete='off' "
+                . "class='form-control form-control-sm' style='width:240px' "
+                . "value='" . htmlescape($this->userSearch) . "' "
+                . "placeholder='" . htmlescape(self::t('Search user...')) . "' "
+                . "aria-label='" . htmlescape(self::t('Search user')) . "'>";
+            echo "<div id='uploadsccglpi_user_suggest' class='list-group position-absolute shadow' "
+                . "style='display:none;z-index:1050;min-width:100%;max-height:320px;overflow:auto'></div>";
+            echo "</div>";
+            echo $this->suggestScript($self);
+        }
+        echo "<label class='form-label mb-0 text-muted small' for='uploadsccglpi_list_limit'>{$label}</label>";
+        echo "<select id='uploadsccglpi_list_limit' name='list_limit' class='form-select form-select-sm w-auto' "
+            . "onchange=\"if (this.form.list_user_search) { this.form.list_user_search.value = ''; } this.form.submit()\">";
+        foreach (self::LIST_LIMITS as $option) {
+            echo "<option value='{$option}'" . ($option === $limit ? ' selected' : '') . ">{$option}</option>";
+        }
+        echo "</select><noscript><button type='submit' class='btn btn-sm btn-outline-secondary'>OK</button></noscript>";
+        echo "</form>";
+    }
+
+    private function suggestScript(string $self): string
+    {
+        global $CFG_GLPI;
+
+        $config = json_encode([
+            'endpoint' => ($CFG_GLPI['root_doc'] ?? '') . '/plugins/uploadsccglpi/front/uploaders.ajax.php',
+            'target'   => $self,
+            'empty'    => self::t('No matching user found.'),
+        ], JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
+
+        $js = <<<'JS'
+(function (cfg) {
+    var input = document.getElementById('uploadsccglpi_user_search');
+    var box   = document.getElementById('uploadsccglpi_user_suggest');
+    if (!input || !box || !window.fetch) { return; }
+
+    var items = [], active = -1, timer = null, seq = 0;
+
+    function hide() { box.style.display = 'none'; active = -1; }
+
+    function go(item) { window.location.href = cfg.target + '?list_scope=' + encodeURIComponent(item.id); }
+
+    function paint() {
+        box.textContent = '';
+        if (!items.length) {
+            var none = document.createElement('div');
+            none.className = 'list-group-item py-1 text-muted small';
+            none.textContent = cfg.empty;
+            box.appendChild(none);
+        }
+        items.forEach(function (item, i) {
+            var a = document.createElement('a');
+            a.href = cfg.target + '?list_scope=' + encodeURIComponent(item.id);
+            a.className = 'list-group-item list-group-item-action py-1' + (i === active ? ' active' : '');
+            a.textContent = item.label + (item.login && item.login !== item.label ? ' (' + item.login + ')' : '');
+            box.appendChild(a);
+        });
+        box.style.display = 'block';
+    }
+
+    input.addEventListener('input', function () {
+        clearTimeout(timer);
+        var q = input.value.trim();
+        if (q === '') { hide(); return; }
+        var mine = ++seq;
+        timer = setTimeout(function () {
+            fetch(cfg.endpoint + '?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (mine !== seq) { return; }
+                    items = d.users || [];
+                    active = -1;
+                    paint();
+                })
+                .catch(hide);
+        }, 150);
+    });
+
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { hide(); return; }
+        if (box.style.display === 'none' || !items.length) { return; }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+            paint();
+        } else if (e.key === 'Enter' && active >= 0) {
+            e.preventDefault();
+            go(items[active]);
+        } else if (e.key === 'Enter' && items.length === 1) {
+            e.preventDefault();
+            go(items[0]);
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target !== input && !box.contains(e.target)) { hide(); }
+    });
+})(__CONFIG__);
+JS;
+
+        return Html::scriptBlock(str_replace('__CONFIG__', (string) $config, $js));
+    }
+
+    private function searchUsers(): void
+    {
+        if (!PluginUploadsccglpiUploadedFile::canSeeEveryUpload()) {
+            return;
+        }
+
+        $query = trim((string) ($_GET['list_user_search'] ?? ''));
+        if ($query === '') {
+            return;
+        }
+
+        $matches = PluginUploadsccglpiUploadedFile::searchUsers($query, self::USER_SEARCH_LIMIT);
+        if (count($matches) === 1) {
+            PluginUploadsccglpiUploadedFile::setListScope((string) $matches[0]);
+            return;
+        }
+
+        $this->userSearch  = $query;
+        $this->userMatches = $matches;
+    }
+
+    private function renderUserMatches(string $self): void
+    {
+        if ($this->userSearch === '') {
+            return;
+        }
+
+        if ($this->userMatches === []) {
+            echo "<div class='alert alert-warning py-2'>" . htmlescape(sprintf(
+                self::t('No user matches "%s".'),
+                $this->userSearch
+            )) . "</div>";
+            return;
+        }
+
+        $shown = array_slice($this->userMatches, 0, self::USER_SEARCH_LIMIT);
+
+        echo "<div class='alert alert-info py-2'><span class='me-2'>"
+            . htmlescape(self::t('Pick a user:')) . "</span>";
+        foreach ($shown as $userId) {
+            echo "<a class='btn btn-sm btn-outline-primary me-1 mb-1' href='"
+                . htmlescape($self . '?list_scope=' . $userId) . "'>"
+                . htmlescape(getUserName($userId)) . "</a>";
+        }
+        if (count($this->userMatches) > self::USER_SEARCH_LIMIT) {
+            echo "<div class='small text-muted'>" . htmlescape(sprintf(
+                self::t('Showing the first %d matches - narrow your search.'),
+                self::USER_SEARCH_LIMIT
+            )) . "</div>";
+        }
+        echo "</div>";
+    }
+
     private function renderList(string $self): void
     {
-        $pairs = PluginUploadsccglpiUploadedFile::findVisiblePairs(self::LIST_LIMIT);
+        if (isset($_GET['list_scope'])) {
+            PluginUploadsccglpiUploadedFile::setListScope((string) $_GET['list_scope']);
+        }
+        $this->searchUsers();
+        $limit = self::listLimit();
+        $pairs = PluginUploadsccglpiUploadedFile::findVisiblePairs($limit);
         $total = PluginUploadsccglpiUploadedFile::countVisiblePairs();
 
         $title    = htmlescape(self::t('Upload log'));
-        $everyone = PluginUploadsccglpiUploadedFile::canSeeEveryUpload();
-        $scope    = htmlescape($everyone
-            ? self::t('Files uploaded by every user are listed.')
-            : self::t('Only the files you uploaded yourself are listed.'));
+        $everyone = PluginUploadsccglpiUploadedFile::listsEveryUpload();
+        $listed   = PluginUploadsccglpiUploadedFile::listedUserId();
+        $scope    = htmlescape(match (true) {
+            $everyone                                => self::t('Files uploaded by every user are listed.'),
+            $listed === (int) Session::getLoginUserID() => self::t('Only the files you uploaded yourself are listed.'),
+            default                                  => sprintf(self::t('Files uploaded by %s are listed.'), getUserName((int) $listed)),
+        });
 
         echo "<div class='card m-4'>";
         echo "<div class='card-header d-flex justify-content-between align-items-center flex-wrap gap-2'>";
         echo "<div><h3 class='card-title mb-0'><i class='ti ti-files me-2'></i>{$title}</h3>";
         echo "<div class='text-muted small'>{$scope}</div></div>";
+        echo "<div class='d-flex align-items-center gap-3'>";
+        $this->renderLimitSelect($self, $limit);
         echo "<span class='badge bg-secondary'>" . htmlescape((string) $total) . "</span>";
         echo "</div>";
+        echo "</div>";
         echo "<div class='card-body'>";
+        $this->renderUserMatches($self);
 
         if ($pairs === []) {
             echo "<p class='text-muted mb-0'>"
@@ -493,7 +718,7 @@ class PluginUploadsccglpiUploadPanel
     private function renderTable(array $pairs, string $self): void
     {
         $canPurge = PluginUploadsccglpiUploadedFile::canPurge();
-        $showUser = PluginUploadsccglpiUploadedFile::canSeeEveryUpload();
+        $showUser = PluginUploadsccglpiUploadedFile::listsEveryUpload();
         $selfH    = htmlescape($self);
 
         echo "<form method='post' action='{$selfH}'>";
@@ -548,7 +773,8 @@ class PluginUploadsccglpiUploadPanel
         echo "<td class='text-nowrap'>" . htmlescape(Html::convDateTime((string) $pair['date'])) . "</td>";
         echo "<td class='text-end text-nowrap'>";
         if ($canPurge) {
-            echo "<button type='submit' name='delete' value='{$firstId}' "
+            $confirm = htmlescape(json_encode(self::t('Remove this pair from the log? The files on disk are not deleted.')));
+            echo "<button type='submit' name='delete' value='{$firstId}' onclick='return confirm({$confirm})' "
                 . "class='btn btn-sm btn-ghost-danger' title='" . htmlescape(__('Delete')) . "'>"
                 . "<i class='ti ti-trash'></i></button>";
         }

@@ -1,10 +1,11 @@
 <?php
 
-define('PLUGIN_UPLOADSCCGLPI_VERSION', '1.1.0');
+define('PLUGIN_UPLOADSCCGLPI_VERSION', '1.0.0');
 define('PLUGIN_UPLOADSCCGLPI_MIN_GLPI', '11.0.0');
 define('PLUGIN_UPLOADSCCGLPI_MAX_GLPI', '11.99.99');
 define('PLUGIN_UPLOADSCCGLPI_TABLE', 'glpi_plugin_uploadsccglpi_uploadedfiles');
 define('PLUGIN_UPLOADSCCGLPI_VERSIONS_TABLE', 'glpi_plugin_uploadsccglpi_agentversions');
+define('PLUGIN_UPLOADSCCGLPI_HISTORY_TABLE', 'glpi_plugin_uploadsccglpi_agentversionhistory');
 
 function plugin_init_uploadsccglpi(): void
 {
@@ -25,7 +26,8 @@ function plugin_init_uploadsccglpi(): void
 
     if (Session::getLoginUserID()) {
         if (
-            isset($_SESSION['glpimenu'])
+            PluginUploadsccglpiUploadedFile::canUpload()
+            && isset($_SESSION['glpimenu'])
             && ($_SESSION['glpimenu']['uploadsccglpi']['title'] ?? null)
                 !== PluginUploadsccglpiUploadedFile::getMenuName()
         ) {
@@ -56,6 +58,12 @@ function plugin_uploadsccglpi_check_prerequisites(): bool
     if (version_compare(GLPI_VERSION, PLUGIN_UPLOADSCCGLPI_MIN_GLPI, 'lt')) {
         echo 'uploadSCCGLPI requires GLPI >= ' . PLUGIN_UPLOADSCCGLPI_MIN_GLPI;
         return false;
+    }
+    foreach (['zlib', 'mbstring'] as $extension) {
+        if (!extension_loaded($extension)) {
+            echo 'uploadSCCGLPI requires the PHP extension ' . $extension;
+            return false;
+        }
     }
     return true;
 }

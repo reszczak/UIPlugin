@@ -130,18 +130,49 @@ class PluginUploadsccglpiConfig
         return preg_match('/^\d{1,6}(\.\d{1,6}){0,4}$/', trim($value)) === 1;
     }
 
-    public function save(array $input): void
+    public const LIMITS = [
+        'max_size_mb'     => [1, 4096],
+        'max_files'       => [1, 10000],
+        'max_age_days'    => [1, 3650],
+        'version_max_gap' => [1, 999],
+    ];
+
+    public function save(array $input): array
     {
         $archive = self::parseExtensions((string) ($input['archive_extensions'] ?? ''));
         $signal  = self::parseExtensions((string) ($input['signal_extension'] ?? ''));
 
-        Config::setConfigurationValues(self::CONTEXT, [
-            'archive_extensions' => implode(',', $archive !== [] ? $archive : self::parseExtensions(self::DEFAULTS['archive_extensions'])),
-            'signal_extension'   => $signal[0] ?? self::DEFAULTS['signal_extension'],
-            'max_size_mb'        => (string) max(1, (int) ($input['max_size_mb'] ?? 0)),
-            'max_files'          => (string) max(1, (int) ($input['max_files'] ?? 0)),
-            'version_max_gap'    => (string) max(1, (int) ($input['version_max_gap'] ?? 0)),
-            'max_age_days'       => (string) max(1, (int) ($input['max_age_days'] ?? 0)),
-        ]);
+        $adjusted = [];
+        if ($archive === []) {
+            $adjusted[] = 'archive_extensions';
+        }
+        if ($signal === []) {
+            $adjusted[] = 'signal_extension';
+        }
+
+        $values = [
+            'archive_extensions' => implode(',', $archive !== [] ? $archive : $this->archiveExtensions()),
+            'signal_extension'   => $signal[0] ?? $this->signalExtension(),
+        ];
+
+        foreach (self::LIMITS as $key => [$min, $max]) {
+            $raw = trim((string) ($input[$key] ?? ''));
+            if (preg_match('/^\d{1,9}$/', $raw) !== 1) {
+                $adjusted[] = $key;
+                $values[$key] = $this->value($key);
+                continue;
+            }
+
+            $number = (int) $raw;
+            if ($number < $min || $number > $max) {
+                $adjusted[] = $key;
+            }
+            $values[$key] = (string) min($max, max($min, $number));
+        }
+
+        Config::setConfigurationValues(self::CONTEXT, $values);
+        $this->values = array_merge($this->values, $values);
+
+        return $adjusted;
     }
 }

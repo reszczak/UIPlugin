@@ -45,7 +45,9 @@ class PluginUploadsccglpiAgentVersions
         $t = static fn(string $s) => __($s, 'uploadsccglpi');
 
         return match ($state['issue']) {
-            self::ISSUE_MISSING    => sprintf($t('Article "%s" not found - the last saved versions apply.'), self::KB_TITLE),
+            self::ISSUE_MISSING    => $state['versions'] === []
+                ? sprintf($t('Article "%s" not found and no earlier version is saved.'), self::KB_TITLE)
+                : sprintf($t('Article "%s" not found - the last saved versions apply.'), self::KB_TITLE),
             self::ISSUE_RENAMED    => sprintf($t('Article renamed to "%s".'), $state['article']['name'] ?? ''),
             self::ISSUE_UNPARSED   => sprintf($t('No version could be read from article "%s" - the last saved versions apply.'), self::KB_TITLE),
             self::ISSUE_INCOMPLETE => sprintf($t('Article "%s" does not give a version for every system.'), self::KB_TITLE),
@@ -190,6 +192,26 @@ class PluginUploadsccglpiAgentVersions
         return $out;
     }
 
+    public static function history(int $limit = 10): array
+    {
+        global $DB;
+
+        try {
+            if (!$DB->tableExists(PLUGIN_UPLOADSCCGLPI_HISTORY_TABLE)) {
+                return [];
+            }
+
+            return iterator_to_array($DB->request([
+                'FROM'  => PLUGIN_UPLOADSCCGLPI_HISTORY_TABLE,
+                'ORDER' => ['date_creation DESC', 'id DESC'],
+                'LIMIT' => $limit,
+            ]), false);
+        } catch (Throwable $e) {
+            trigger_error('uploadsccglpi: could not read the agent version history - ' . $e->getMessage(), E_USER_WARNING);
+            return [];
+        }
+    }
+
     private static function remember(string $os, string $version, int $articleId, ?array $row): array
     {
         global $DB;
@@ -215,6 +237,15 @@ class PluginUploadsccglpiAgentVersions
                 ],
                 ['platform' => $os]
             );
+
+            if (($row['version'] ?? null) !== $version && $DB->tableExists(PLUGIN_UPLOADSCCGLPI_HISTORY_TABLE)) {
+                $DB->insert(PLUGIN_UPLOADSCCGLPI_HISTORY_TABLE, [
+                    'platform'         => $os,
+                    'version'          => $version,
+                    'knowbaseitems_id' => $articleId,
+                    'date_creation'    => $now,
+                ]);
+            }
         } catch (Throwable $e) {
             trigger_error('uploadsccglpi: could not store the agent version - ' . $e->getMessage(), E_USER_WARNING);
         }
@@ -227,14 +258,22 @@ class PluginUploadsccglpiAgentVersions
         $out     = [];
         $current = null;
 
-        preg_match_all('/(linux|unix)|(windows)|(\d+(?:\.\d+)+)/i', self::toText($answer), $matches, PREG_SET_ORDER);
+        preg_match_all(
+            '/(linux|unix)|(windows)|(\d{4}[.\/-]\d{1,2}[.\/-]\d{1,2}|\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4})|(\d+(?:\.\d+)+)/i',
+            self::toText($answer),
+            $matches,
+            PREG_SET_ORDER
+        );
         foreach ($matches as $m) {
+            if (($m[3] ?? '') !== '') {
+                continue;
+            }
             if (($m[1] ?? '') !== '') {
                 $current = self::OS_UNIX;
             } elseif (($m[2] ?? '') !== '') {
                 $current = self::OS_WINDOWS;
             } elseif ($current !== null) {
-                $out[$current] ??= $m[3];
+                $out[$current] ??= $m[4];
                 $current = null;
             }
         }

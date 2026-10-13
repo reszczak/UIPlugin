@@ -5,10 +5,10 @@ return [
     'Uploaded files' => 'Wgrane pliki',
     'Upload a file' => 'Wgraj plik',
     'File to upload' => 'Plik do wgrania',
-    'Too many files in one upload (limit: %d).' => 'Za dużo plików w jednym wgraniu (limit: %d).',
+    'Too many hosts in one upload (limit: %d).' => 'Za dużo hostów w jednym wgraniu (limit: %d).',
     'PHP caps the number of files per request (max_file_uploads: %d) and drops the rest without a word; if you selected more, they never reached GLPI.'
         => 'PHP ogranicza liczbę plików na żądanie (max_file_uploads: %d) i odrzuca resztę bez słowa; jeśli wybrano więcej, nie dotarły do GLPI.',
-    'Maximum number of files per upload' => 'Maksymalna liczba plików na jedno wgranie',
+    'Maximum number of hosts per upload' => 'Maksymalna liczba hostów na jedno wgranie',
     'No file has been uploaded yet.' => 'Nie wgrano jeszcze żadnego pliku.',
     'Files uploaded by every user are listed.' => 'Widzisz pliki wgrane przez wszystkich użytkowników.',
     'Only the files you uploaded yourself are listed.' => 'Widzisz tylko pliki wgrane przez siebie.',
@@ -16,7 +16,7 @@ return [
     'This file no longer exists.' => 'Ten plik już nie istnieje.',
     'You are not allowed to upload files.' => 'Nie masz uprawnień do wgrywania plików.',
     'Size' => 'Rozmiar',
-    'Pairs uploaded: %d' => 'Wgrane pary: %d',
+    'Hosts uploaded: %d' => 'Wgrane hosty: %d',
     'Unrecognised extension.' => 'Nierozpoznane rozszerzenie.',
     'Upload log' => 'Rejestr wgrań',
     'Entries to show' => 'Liczba wpisów',
@@ -35,10 +35,8 @@ return [
     'Files uploaded by %s are listed.' => 'Widzisz pliki wgrane przez: %s.',
     'Only the %d most recent entries are listed.' => 'Wyświetlanych jest tylko %d ostatnich wpisów.',
     'Host' => 'Host',
-    'Two files of the same kind for one host - a pair is one archive and one %s file.'
-        => 'Dwa pliki tego samego rodzaju dla jednego hosta – para to jedno archiwum i jeden plik %s.',
-    'The archive of this pair is missing.' => 'Brakuje archiwum dla tej pary.',
-    'The matching "%s" file is missing.' => 'Brakuje pasującego pliku "%s".',
+    'Two archives for one host.' => 'Dwa archiwa dla jednego hosta.',
+    'The archive of this host is missing.' => 'Brakuje archiwum dla tego hosta.',
     'Result of the last upload' => 'Wynik ostatniego wgrania',
     'loaded: %d' => 'załadowane: %d',
     'refused: %d' => 'odrzucone: %d',
@@ -57,7 +55,6 @@ return [
     'The agent version is newer than allowed.' => 'Wersja agenta jest nowsza niż dopuszczalna.',
     'The system category is missing or unknown.' => 'Brak kategorii systemu lub jest nierozpoznana.',
     'The newest agent version is unknown.' => 'Nie znana jest najnowsza wersja agenta.',
-    'The matching signal file is missing.' => 'Brakuje pasującego pliku .signal.',
     'No "%s" file could be read from the archive.'
         => 'Nie udało się odczytać pliku "%s" z archiwum.',
     'The inventory date (var:general::date) is missing from the .cur file.'
@@ -79,8 +76,8 @@ return [
     'Linux / Unix' => 'Linux / Unix',
     'Windows' => 'Windows',
     'unknown' => 'nieznana',
-    'You can select up to %d files with the extension %s or %s.'
-        => 'Możesz wybrać maksymalnie %d plików z rozszerzeniem %s lub %s.',
+    'You can select up to %d hosts at once (archives: %s). Optionally, you can also add a %s file for each host.'
+        => 'Możesz wybrać maksymalnie %d hostów naraz (archiwa: %s). Opcjonalnie możesz dodać także plik %s dla każdego hosta.',
     'No newest agent version is known for %s - the "%s" knowledge base article could not be read. Contact your GLPI administrator.'
         => 'Nie jest znana najnowsza wersja agenta dla %s – nie udało się odczytać wpisu bazy wiedzy „%s". Skontaktuj się z administratorem GLPI.',
     'Maximum version gap' => 'Maksymalna różnica wersji',
@@ -91,13 +88,12 @@ return [
     'Every archive must come with a file with this extension and the same name.'
         => 'Każdemu archiwum musi towarzyszyć plik o tej samej nazwie i tym rozszerzeniu.',
     'Applies to each file separately.' => 'Dotyczy każdego pliku osobno.',
-    'Archives and marker files together, in one upload.' => 'Archiwa i pliki sygnału łącznie, w jednym wgraniu.',
+    'One archive is one host.' => 'Jedno archiwum to jeden host.',
     'Counted from the inventory date in the .cur file.' => 'Liczony od daty inwentaryzacji zapisanej w pliku .cur.',
     'Counted from the newest version in the knowledge base; with 3, the newest and the two previous ones are accepted.'
         => 'Liczona od najnowszej wersji z bazy wiedzy; przy 3 przechodzi najnowsza i dwie poprzednie.',
     'Agent version history' => 'Historia wersji agenta',
     'Files' => 'Pliki',
-    'incomplete pair' => 'niekompletna para',
     'Archive extensions' => 'Rozszerzenia archiwum',
     'Marker extension' => 'Rozszerzenie sygnału',
     'Only these extensions are accepted: %s.' => 'Akceptowane są wyłącznie rozszerzenia: %s.',
@@ -130,5 +126,5 @@ return [
     'The inventory date %s is in the future.' => 'Data inwentaryzacji %s jest z przyszłości.',
     'Article "%s" not found and no earlier version is saved.' => 'Nie znaleziono wpisu „%s" i nie zapisano żadnej wcześniejszej wersji.',
     'Some values were invalid or out of range and were adjusted - check the form.' => 'Część wartości była nieprawidłowa lub spoza zakresu i została skorygowana – sprawdź formularz.',
-    'Remove this pair from the log? The files on disk are not deleted.' => 'Usunąć tę parę z rejestru? Pliki na dysku nie zostaną usunięte.',
+    'Remove this entry from the log? The files on disk are not deleted.' => 'Usunąć ten wpis z rejestru? Pliki na dysku nie zostaną usunięte.',
 ];

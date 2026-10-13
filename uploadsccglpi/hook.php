@@ -109,6 +109,16 @@ function plugin_uploadsccglpi_install()
         }
     }
 
+    $reports = PLUGIN_UPLOADSCCGLPI_REPORT_TABLE;
+    if (!$DB->tableExists($reports)) {
+        $DB->doQuery("CREATE TABLE `{$reports}` (
+            `users_id` INT UNSIGNED NOT NULL,
+            `report` LONGTEXT NOT NULL,
+            `date_creation` TIMESTAMP NULL DEFAULT NULL,
+            PRIMARY KEY (`users_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    }
+
     PluginUploadsccglpiAgentVersions::sync();
 
     $current = Config::getConfigurationValues(PluginUploadsccglpiConfig::CONTEXT);
@@ -136,7 +146,7 @@ function plugin_uploadsccglpi_uninstall()
 {
     global $DB;
 
-    foreach ([PLUGIN_UPLOADSCCGLPI_TABLE, PLUGIN_UPLOADSCCGLPI_VERSIONS_TABLE, PLUGIN_UPLOADSCCGLPI_HISTORY_TABLE] as $table) {
+    foreach ([PLUGIN_UPLOADSCCGLPI_TABLE, PLUGIN_UPLOADSCCGLPI_VERSIONS_TABLE, PLUGIN_UPLOADSCCGLPI_HISTORY_TABLE, PLUGIN_UPLOADSCCGLPI_REPORT_TABLE] as $table) {
         if ($DB->tableExists($table)) {
             $DB->doQuery('DROP TABLE `' . $table . '`');
         }

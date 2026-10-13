@@ -64,7 +64,7 @@ class PluginUploadsccglpiAdminPanel
         self::field('archive_extensions', self::t('Archive extensions'), implode(',', $config->archiveExtensions()), 'text', "maxlength='255'", self::t('Comma-separated, e.g. tar.gz,gz.'));
         self::field('signal_extension', self::t('Marker extension'), $config->signalExtension(), 'text', "maxlength='64'", self::t('Every archive must come with a file with this extension and the same name.'));
         self::field('max_size_mb', self::t('Maximum size per file (MB)'), (string) $config->maxSizeMb(), 'number', "min='1' max='4096'", self::t('Applies to each file separately.'));
-        self::field('max_files', self::t('Maximum number of files per upload'), (string) $config->maxFiles(), 'number', "min='1' max='10000'", self::t('Archives and marker files together, in one upload.'));
+        self::field('max_files', self::t('Maximum number of hosts per upload'), (string) $config->maxFiles(), 'number', "min='1' max='10000'", self::t('One archive is one host.'));
         self::field('max_age_days', self::t('Maximum inventory age (days)'), (string) $config->maxAgeDays(), 'number', "min='1' max='3650'", self::t('Counted from the inventory date in the .cur file.'));
         self::field('version_max_gap', self::t('Maximum version gap'), (string) $config->versionMaxGap(), 'number', "min='1' max='999'", self::t('Counted from the newest version in the knowledge base; with 3, the newest and the two previous ones are accepted.'));
 

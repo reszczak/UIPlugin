@@ -6,8 +6,6 @@ class PluginUploadsccglpiUploadPanel
     private const LIST_LIMIT_KEY     = 'plugin_uploadsccglpi_list_limit';
     private const USER_SEARCH_LIMIT  = 20;
 
-    private const REPORT_KEY = 'plugin_uploadsccglpi_report';
-
     private PluginUploadsccglpiConfig $config;
     private PluginUploadsccglpiStorage $storage;
     private PluginUploadsccglpiInventoryCheck $check;
@@ -97,9 +95,9 @@ class PluginUploadsccglpiUploadPanel
         }
 
         $limit = $this->config->maxFiles();
-        if (count($uploads) > $limit) {
+        if ($this->countHosts($uploads) > $limit) {
             Session::addMessageAfterRedirect(
-                sprintf(self::t('Too many files in one upload (limit: %d).'), $limit),
+                sprintf(self::t('Too many hosts in one upload (limit: %d).'), $limit),
                 false,
                 ERROR
             );
@@ -119,146 +117,115 @@ class PluginUploadsccglpiUploadPanel
         }
 
         $report = [];
-        $pairs   = $this->groupIntoPairs($uploads, $report);
+        $hosts  = $this->groupByHost($uploads, $report);
 
         $stored = 0;
-        foreach ($pairs as $pair) {
-            $files = [$pair['archive']['name'], $pair['signal']['name']];
+        foreach ($hosts as $host) {
+            $files = [$host['archive']['name']];
 
-            $reason = $this->check->check((string) $pair['archive']['upload']['tmp_name'], $pair['stem']);
+            $reason = $this->check->check((string) $host['archive']['upload']['tmp_name'], $host['stem']);
             if ($reason !== '') {
-                $report[] = self::reportRow($pair['stem'], $files, false, $reason, $this->check->lastGroup());
+                $report[] = self::reportRow($host['stem'], $files, false, $reason, $this->check->lastGroup());
                 continue;
             }
 
-            $failure = $this->storePair($pair);
-            $report[] = self::reportRow($pair['stem'], $files, $failure === '', $failure);
+            $failure = $this->storeArchive($host);
+            $report[] = self::reportRow($host['stem'], $files, $failure === '', $failure);
             if ($failure === '') {
                 $stored++;
             }
         }
 
-        $_SESSION[self::REPORT_KEY] = ['rows' => $report, 'shown' => false];
+        PluginUploadsccglpiLastReport::save((int) Session::getLoginUserID(), $report);
 
         if ($stored > 0) {
             Session::addMessageAfterRedirect(
-                sprintf(self::t('Pairs uploaded: %d'), $stored)
+                sprintf(self::t('Hosts uploaded: %d'), $stored)
             );
         }
     }
 
-    private function groupIntoPairs(array $uploads, array &$report): array
+    private function countHosts(array $uploads): int
+    {
+        $signal = $this->config->signalExtension();
+        $known  = $this->config->allowedExtensions();
+
+        return count(array_filter($uploads, static fn(array $u) =>
+            PluginUploadsccglpiStorage::splitName((string) ($u['name'] ?? ''), $known)['extension'] !== $signal));
+    }
+
+    private function groupByHost(array $uploads, array &$report): array
     {
         $archives = $this->config->archiveExtensions();
         $signal   = $this->config->signalExtension();
         $known    = $this->config->allowedExtensions();
 
-        $groups   = [];
-        $rejected = [];
+        $hosts      = [];
+        $signalOnly = [];
         foreach ($uploads as $upload) {
             $name = (string) ($upload['name'] ?? '');
 
-            $rejection = $this->storage->validate($upload);
-            if ($rejection !== '') {
-                $rejectedStem = PluginUploadsccglpiStorage::splitName($name, $known)['stem'];
-                $report[] = self::reportRow($rejectedStem, [$name], false, $rejection);
-                $rejected[mb_strtolower($rejectedStem)] = true;
+            ['stem' => $stem, 'extension' => $extension] =
+                PluginUploadsccglpiStorage::splitName($name, $known);
+            $key = mb_strtolower($stem);
+
+            if ($extension === $signal) {
+                $signalOnly[$key] ??= ['stem' => $stem, 'name' => $name];
                 continue;
             }
 
-            ['stem' => $stem, 'extension' => $extension] =
-                PluginUploadsccglpiStorage::splitName($name, $known);
+            $rejection = $this->storage->validate($upload);
+            if ($rejection !== '') {
+                $report[] = self::reportRow($stem, [$name], false, $rejection);
+                $hosts[$key] = false;
+                continue;
+            }
 
-            $role = $extension === $signal ? 'signal' : (in_array($extension, $archives, true) ? 'archive' : '');
-            if ($role === '') {
+            if (!in_array($extension, $archives, true)) {
                 $report[] = self::reportRow($name, [$name], false, self::t('Unrecognised extension.'));
                 continue;
             }
 
-            $key = mb_strtolower($stem);
-            if (isset($groups[$key][$role])) {
-                $report[] = self::reportRow($stem, [$name], false, sprintf(
-                    self::t('Two files of the same kind for one host - a pair is one archive and one %s file.'),
-                    '.' . $signal
-                ));
+            if (isset($hosts[$key])) {
+                if ($hosts[$key] !== false) {
+                    $report[] = self::reportRow($stem, [$name], false, self::t('Two archives for one host.'));
+                }
                 continue;
             }
 
-            $groups[$key]['stem']  ??= $stem;
-            $groups[$key][$role]     = ['upload' => $upload, 'extension' => $extension, 'name' => $name];
+            $hosts[$key] = ['stem' => $stem, 'archive' => ['upload' => $upload, 'extension' => $extension, 'name' => $name]];
         }
 
-        $pairs = [];
-        foreach ($groups as $group) {
-            $stem = (string) $group['stem'];
-            if (isset($rejected[mb_strtolower($stem)]) && (!isset($group['archive']) || !isset($group['signal']))) {
-                continue;
-            }
-            if (!isset($group['archive'])) {
+        foreach ($signalOnly as $key => $orphan) {
+            if (!isset($hosts[$key])) {
                 $report[] = self::reportRow(
-                    $stem,
-                    [$group['signal']['name']],
+                    $orphan['stem'],
+                    [$orphan['name']],
                     false,
-                    self::t('The archive of this pair is missing.')
+                    self::t('The archive of this host is missing.')
                 );
-                continue;
             }
-            if (!isset($group['signal'])) {
-                $report[] = self::reportRow(
-                    $stem,
-                    [$group['archive']['name']],
-                    false,
-                    sprintf(self::t('The matching "%s" file is missing.'), $stem . '.' . $signal),
-                    self::t('The matching signal file is missing.')
-                );
-                continue;
-            }
-            $pairs[] = ['stem' => $stem, 'archive' => $group['archive'], 'signal' => $group['signal']];
         }
 
-        return $pairs;
+        return array_values(array_filter($hosts));
     }
 
-    private function storePair(array $pair): string
+    private function storeArchive(array $host): string
     {
-        $extensions = [$pair['archive']['extension'], $pair['signal']['extension']];
-        $stem       = $this->storage->freeStemForPair($pair['stem'], $extensions);
+        $stem   = $this->storage->freeStemForPair($host['stem'], [$host['archive']['extension']]);
+        $result = $this->storage->store($host['archive']['upload'], $stem . '.' . $host['archive']['extension']);
 
-        $pairKey = $stem . '#' . uniqid();
+        if (!$result['ok']) {
+            return $result['error'];
+        }
 
-        $written = [];
-        foreach (['archive', 'signal'] as $role) {
-            $part   = $pair[$role];
-            $result = $this->storage->store($part['upload'], $stem . '.' . $part['extension']);
-
-            if (!$result['ok']) {
-                $this->rollbackPair($written);
-                return $result['error'];
-            }
-
-            $result['pair_key'] = $pairKey;
-            $id = $this->recordUpload($result);
-            if ($id === false) {
-                $this->storage->removeStored($result);
-                $this->rollbackPair($written);
-                return self::t('The file could not be registered in the database.');
-            }
-
-            $written[] = ['id' => $id, 'fields' => $result];
+        $result['pair_key'] = $stem . '#' . uniqid();
+        if ($this->recordUpload($result) === false) {
+            $this->storage->removeStored($result);
+            return self::t('The file could not be registered in the database.');
         }
 
         return '';
-    }
-
-    private function rollbackPair(array $written): void
-    {
-        foreach ($written as $entry) {
-            $item = new PluginUploadsccglpiUploadedFile();
-            if ($item->getFromDB($entry['id'])) {
-                $item->delete(['id' => $entry['id']], true);
-            }
-            $this->storage->removeStored($entry['fields']);
-        }
     }
 
     private function recordUpload(array $result): int|false
@@ -353,7 +320,7 @@ class PluginUploadsccglpiUploadPanel
 
         $title  = htmlescape(self::t('Upload a file'));
         $intro  = htmlescape(sprintf(
-            self::t('You can select up to %d files with the extension %s or %s.'),
+            self::t('You can select up to %d hosts at once (archives: %s). Optionally, you can also add a %s file for each host.'),
             $this->config->maxFiles(),
             implode(', ', array_map(static fn(string $e) => '.' . $e, $this->config->archiveExtensions())),
             '.' . $this->config->signalExtension()
@@ -445,14 +412,11 @@ class PluginUploadsccglpiUploadPanel
 
     private function renderReport(): void
     {
-        $state = $_SESSION[self::REPORT_KEY] ?? null;
-        $rows  = is_array($state) ? ($state['rows'] ?? []) : [];
-        if (!is_array($rows) || $rows === []) {
+        $state = PluginUploadsccglpiLastReport::load((int) Session::getLoginUserID());
+        if ($state === null) {
             return;
         }
-
-        $full = empty($state['shown']);
-        $_SESSION[self::REPORT_KEY]['shown'] = true;
+        $rows = $state['rows'];
 
         $loadedRows = array_values(array_filter($rows, static fn(array $r) => $r['ok']));
         $failedRows = array_values(array_filter($rows, static fn(array $r) => !$r['ok']));
@@ -466,17 +430,13 @@ class PluginUploadsccglpiUploadPanel
 
         $title = htmlescape(self::t('Result of the last upload'));
 
-        if (!$full) {
-            echo "<div class='card m-4'><div class='card-body py-2 d-flex align-items-center flex-wrap gap-2'>";
-            echo "<span class='fw-bold me-2'>{$title}</span>{$loadedBadge}{$failedBadge}";
-            echo "<span class='ms-auto d-flex gap-2 flex-wrap'>{$buttons}</span>";
-            echo "</div></div>";
-            return;
-        }
-
         echo "<div class='card m-4'>";
         echo "<div class='card-header d-flex justify-content-between align-items-center flex-wrap gap-2'>";
-        echo "<h3 class='card-title mb-0'><i class='ti ti-clipboard-check me-2'></i>{$title}</h3>";
+        echo "<div><h3 class='card-title mb-0'><i class='ti ti-clipboard-check me-2'></i>{$title}</h3>";
+        if ($state['date'] !== '') {
+            echo "<div class='text-muted small'>" . htmlescape(Html::convDateTime($state['date'])) . "</div>";
+        }
+        echo "</div>";
         echo "<div class='d-flex gap-2 flex-wrap align-items-center'>{$loadedBadge}{$failedBadge}{$buttons}</div>";
         echo "</div>";
         echo "<div class='card-body'>";
@@ -535,8 +495,8 @@ class PluginUploadsccglpiUploadPanel
 
     public static function exportReport(): void
     {
-        $state = $_SESSION[self::REPORT_KEY] ?? null;
-        $rows  = is_array($state) ? ($state['rows'] ?? []) : [];
+        $state = PluginUploadsccglpiLastReport::load((int) Session::getLoginUserID());
+        $rows  = $state['rows'] ?? [];
 
         $clean = static fn(string $v): string => trim(preg_replace('/[\t\r\n]+/', ' ', $v));
 
@@ -854,15 +814,11 @@ JS;
             $links[] = "<code>" . htmlescape((string) $row['filename']) . "</code>";
         }
 
-        $incomplete = count($pair['rows']) < 2
-            ? " <span class='badge bg-red-lt'>" . htmlescape(self::t('incomplete pair')) . "</span>"
-            : '';
-
         $label = explode('#', (string) $pair['key'])[0];
 
         echo "<tr>";
         echo "<td><i class='ti ti-device-desktop me-1 text-muted'></i>"
-            . htmlescape($label) . $incomplete . "</td>";
+            . htmlescape($label) . "</td>";
         echo "<td>" . implode('<br>', $links) . "</td>";
         echo "<td class='text-nowrap'>" . htmlescape(PluginUploadsccglpiStorage::formatSize($size)) . "</td>";
         if ($showUser) {
@@ -871,7 +827,7 @@ JS;
         echo "<td class='text-nowrap'>" . htmlescape(Html::convDateTime((string) $pair['date'])) . "</td>";
         echo "<td class='text-end text-nowrap'>";
         if ($canPurge) {
-            $confirm = htmlescape(json_encode(self::t('Remove this pair from the log? The files on disk are not deleted.')));
+            $confirm = htmlescape(json_encode(self::t('Remove this entry from the log? The files on disk are not deleted.')));
             echo "<button type='submit' name='delete' value='{$firstId}' onclick='return confirm({$confirm})' "
                 . "class='btn btn-sm btn-ghost-danger' title='" . htmlescape(__('Delete')) . "'>"
                 . "<i class='ti ti-trash'></i></button>";

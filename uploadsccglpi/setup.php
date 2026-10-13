@@ -6,6 +6,7 @@ define('PLUGIN_UPLOADSCCGLPI_MAX_GLPI', '11.99.99');
 define('PLUGIN_UPLOADSCCGLPI_TABLE', 'glpi_plugin_uploadsccglpi_uploadedfiles');
 define('PLUGIN_UPLOADSCCGLPI_VERSIONS_TABLE', 'glpi_plugin_uploadsccglpi_agentversions');
 define('PLUGIN_UPLOADSCCGLPI_HISTORY_TABLE', 'glpi_plugin_uploadsccglpi_agentversionhistory');
+define('PLUGIN_UPLOADSCCGLPI_REPORT_TABLE', 'glpi_plugin_uploadsccglpi_lastreports');
 
 function plugin_init_uploadsccglpi(): void
 {

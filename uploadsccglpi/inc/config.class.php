@@ -7,7 +7,7 @@ class PluginUploadsccglpiConfig
         'archive_extensions' => 'tar.gz,gz',
         'signal_extension'   => 'signal',
         'max_size_mb'        => '64',
-        'max_files'          => '200',
+        'max_files'          => '100',
         'version_max_gap'    => '3',
         'max_age_days'       => '7',
     ];

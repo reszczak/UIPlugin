@@ -7,6 +7,7 @@ class PluginUploadsccglpiUploadedFile extends CommonDBTM
     public const SCOPE_ALL = 'all';
 
     private const LIST_SCOPE_KEY = 'plugin_uploadsccglpi_list_scope';
+    private const DATE_RANGE_KEY = 'plugin_uploadsccglpi_list_dates';
 
     public static function getTable($classname = null)
     {
@@ -88,6 +89,40 @@ class PluginUploadsccglpiUploadedFile extends CommonDBTM
         $stored = (int) ($_SESSION[self::LIST_SCOPE_KEY] ?? 0);
 
         return $stored > 0 ? $stored : null;
+    }
+
+    public static function dateRange(): array
+    {
+        $range = $_SESSION[self::DATE_RANGE_KEY] ?? [];
+
+        return [
+            'from' => self::validDate((string) ($range['from'] ?? '')),
+            'to'   => self::validDate((string) ($range['to'] ?? '')),
+        ];
+    }
+
+    public static function setDateRange(string $from, string $to): void
+    {
+        $from = self::validDate($from);
+        $to   = self::validDate($to);
+        if ($from !== '' && $to !== '' && $from > $to) {
+            [$from, $to] = [$to, $from];
+        }
+
+        if ($from === '' && $to === '') {
+            unset($_SESSION[self::DATE_RANGE_KEY]);
+        } else {
+            $_SESSION[self::DATE_RANGE_KEY] = ['from' => $from, 'to' => $to];
+        }
+    }
+
+    private static function validDate(string $value): string
+    {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $m) !== 1 || !checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+            return '';
+        }
+
+        return $value;
     }
 
     public static function listsEveryUpload(): bool
@@ -212,13 +247,33 @@ class PluginUploadsccglpiUploadedFile extends CommonDBTM
         return $userId === null ? $entities : $entities + $own;
     }
 
+    private static function whereCriteria(): array
+    {
+        $criteria = self::visibilityCriteria();
+        $range    = self::dateRange();
+        if ($range['from'] === '' && $range['to'] === '') {
+            return $criteria;
+        }
+
+        $column = self::getTable() . '.date_creation';
+        $and    = [$criteria];
+        if ($range['from'] !== '') {
+            $and[] = [$column => ['>=', $range['from'] . ' 00:00:00']];
+        }
+        if ($range['to'] !== '') {
+            $and[] = [$column => ['<=', $range['to'] . ' 23:59:59']];
+        }
+
+        return ['AND' => $and];
+    }
+
     public static function findVisible(int $limit = 100): array
     {
         global $DB;
 
         $iterator = $DB->request([
             'FROM'   => self::getTable(),
-            'WHERE'  => self::visibilityCriteria(),
+            'WHERE'  => self::whereCriteria(),
             'ORDER'  => ['date_creation DESC', 'id DESC'],
             'LIMIT'  => $limit,
         ]);
@@ -250,7 +305,7 @@ class PluginUploadsccglpiUploadedFile extends CommonDBTM
         $iterator = $DB->request([
             'SELECT' => ['pair_key'],
             'FROM'   => self::getTable(),
-            'WHERE'  => self::visibilityCriteria(),
+            'WHERE'  => self::whereCriteria(),
             'GROUPBY' => ['pair_key'],
         ]);
 

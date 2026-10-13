@@ -23,11 +23,27 @@ class PluginUploadsccglpiInventoryCheck
         return __($s, 'uploadsccglpi');
     }
 
+    private string $lastGroup = '';
+
+    public function lastGroup(): string
+    {
+        return $this->lastGroup;
+    }
+
+    private function reject(string $message, ?string $group = null): string
+    {
+        $this->lastGroup = $group ?? $message;
+
+        return $message;
+    }
+
     public function check(string $path, string $stem): string
     {
+        $this->lastGroup = '';
+
         $content = PluginUploadsccglpiArchive::findMember($path, self::MEMBER_SUFFIX);
         if ($content === null) {
-            return sprintf(self::t('No "%s" file could be read from the archive.'), self::MEMBER_SUFFIX);
+            return $this->reject(sprintf(self::t('No "%s" file could be read from the archive.'), self::MEMBER_SUFFIX));
         }
 
         $reason = $this->checkDate($content);
@@ -47,7 +63,7 @@ class PluginUploadsccglpiInventoryCheck
     {
         $uuid = self::hostUuid($content, $stem);
         if ($uuid === '') {
-            return self::t('The host UUID could not be determined from the .cur file or the file name.');
+            return $this->reject(self::t('The host UUID could not be determined from the .cur file or the file name.'));
         }
 
         $entities = PluginUploadsccglpiUploadedFile::computerEntities($uuid);
@@ -58,7 +74,7 @@ class PluginUploadsccglpiInventoryCheck
         $allowed = array_map('intval', Profile_User::getUserEntities((int) Session::getLoginUserID(), true));
         foreach ($entities as $entity) {
             if (!in_array($entity, $allowed, true)) {
-                return self::t('You do not have permission to the IT system of this host.');
+                return $this->reject(self::t('You do not have permission to the IT system of this host.'));
             }
         }
 
@@ -82,28 +98,37 @@ class PluginUploadsccglpiInventoryCheck
     private function checkDate(string $content): string
     {
         if (preg_match(self::DATE_PATTERN, $content, $m) !== 1) {
-            return self::t('The inventory date (var:general::date) is missing from the .cur file.');
+            return $this->reject(
+                self::t('The inventory date (var:general::date) is missing from the .cur file.'),
+                self::t('The inventory date is missing or unreadable.')
+            );
         }
 
         $raw       = trim($m[1]);
         $timestamp = strtotime($raw);
         if ($timestamp === false) {
-            return sprintf(self::t('The inventory date "%s" could not be read.'), $raw);
+            return $this->reject(
+                sprintf(self::t('The inventory date "%s" could not be read.'), $raw),
+                self::t('The inventory date is missing or unreadable.')
+            );
         }
 
         if ($timestamp > strtotime('now +1 day')) {
-            return sprintf(
-                self::t('The inventory date %s is in the future.'),
-                date('Y-m-d H:i', $timestamp)
+            return $this->reject(
+                sprintf(self::t('The inventory date %s is in the future.'), date('Y-m-d H:i', $timestamp)),
+                self::t('The inventory date is in the future.')
             );
         }
 
         $days = $this->config->maxAgeDays();
         if ($timestamp < strtotime("today -{$days} days")) {
-            return sprintf(
-                self::t('The inventory is from %s and is older than the allowed %d days.'),
-                date('Y-m-d H:i', $timestamp),
-                $days
+            return $this->reject(
+                sprintf(
+                    self::t('The inventory is from %s and is older than the allowed %d days.'),
+                    date('Y-m-d H:i', $timestamp),
+                    $days
+                ),
+                self::t('The inventory is too old.')
             );
         }
 
@@ -113,36 +138,51 @@ class PluginUploadsccglpiInventoryCheck
     private function checkVersion(string $content): string
     {
         if (preg_match(self::VERSION_PATTERN, $content, $m) !== 1) {
-            return self::t('The scc.conf version (fix:general::scc.conf:version) is missing from the .cur file.');
+            return $this->reject(
+                self::t('The scc.conf version (fix:general::scc.conf:version) is missing from the .cur file.'),
+                self::t('The agent version is missing or unreadable.')
+            );
         }
 
         $found = trim($m[1]);
 
         if (preg_match(self::CATEGORY_PATTERN, $content, $c) !== 1) {
-            return self::t('The system category (fix:general::scc.conf:os_category) is missing from the .cur file.');
+            return $this->reject(
+                self::t('The system category (fix:general::scc.conf:os_category) is missing from the .cur file.'),
+                self::t('The system category is missing or unknown.')
+            );
         }
 
         $category = trim($c[1]);
         $platform = PluginUploadsccglpiAgentVersions::platformFor($category);
         if ($platform === null) {
-            return sprintf(
-                self::t('Unknown system category "%s" - expected one of: %s.'),
-                $category,
-                implode(', ', PluginUploadsccglpiAgentVersions::knownCategories())
+            return $this->reject(
+                sprintf(
+                    self::t('Unknown system category "%s" - expected one of: %s.'),
+                    $category,
+                    implode(', ', PluginUploadsccglpiAgentVersions::knownCategories())
+                ),
+                self::t('The system category is missing or unknown.')
             );
         }
 
         $newest = $this->config->newestVersionFor($platform);
         if ($newest === null) {
-            return sprintf(
-                self::t('No newest agent version is known for %s - the "%s" knowledge base article could not be read. Contact your GLPI administrator.'),
-                $category,
-                PluginUploadsccglpiAgentVersions::KB_TITLE
+            return $this->reject(
+                sprintf(
+                    self::t('No newest agent version is known for %s - the "%s" knowledge base article could not be read. Contact your GLPI administrator.'),
+                    $category,
+                    PluginUploadsccglpiAgentVersions::KB_TITLE
+                ),
+                self::t('The newest agent version is unknown.')
             );
         }
 
         if (!PluginUploadsccglpiConfig::isVersion($found)) {
-            return sprintf(self::t('The scc.conf version "%s" could not be read.'), $found);
+            return $this->reject(
+                sprintf(self::t('The scc.conf version "%s" could not be read.'), $found),
+                self::t('The agent version is missing or unreadable.')
+            );
         }
 
         [$min, $max] = self::versionRange($newest, $this->config->versionMaxGap());
@@ -151,17 +191,13 @@ class PluginUploadsccglpiInventoryCheck
         }
 
         return version_compare($found, $newest, '<')
-            ? sprintf(
-                self::t('The agent version %s is too old for %s - the minimum accepted version is %s.'),
-                $found,
-                $category,
-                $min
+            ? $this->reject(
+                sprintf(self::t('The agent version %s is too old for %s.'), $found, $category),
+                self::t('The agent version is too old.')
             )
-            : sprintf(
-                self::t('The agent version %s is newer than allowed for %s - the maximum accepted version is %s.'),
-                $found,
-                $category,
-                $max
+            : $this->reject(
+                sprintf(self::t('The agent version %s is newer than allowed for %s.'), $found, $category),
+                self::t('The agent version is newer than allowed.')
             );
     }
 

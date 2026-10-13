@@ -20,6 +20,11 @@ return [
     'Unrecognised extension.' => 'Nierozpoznane rozszerzenie.',
     'Upload log' => 'Rejestr wgrań',
     'Entries to show' => 'Liczba wpisów',
+    'From' => 'Od',
+    'To' => 'Do',
+    'Filter' => 'Filtruj',
+    'Clear dates' => 'Wyczyść daty',
+    'No entries in the selected date range.' => 'Brak wpisów w wybranym zakresie dat.',
     'Search user...' => 'Szukaj użytkownika...',
     'Search user' => 'Szukaj użytkownika',
     'No matching user found.' => 'Nie znaleziono użytkownika.',
@@ -40,6 +45,19 @@ return [
     'Reason' => 'Powód',
     'loaded' => 'załadowany',
     'not loaded' => 'niezaładowany',
+    'Download the full log of the last upload (.txt)' => 'Pobierz pełny log ostatniego wgrania (.txt)',
+    'Unknown reason.' => 'Nieznany powód.',
+    'Not loaded' => 'Niezaładowane',
+    'Loaded' => 'Załadowane',
+    'The inventory date is missing or unreadable.' => 'Brak daty inwentaryzacji lub nie da się jej odczytać.',
+    'The inventory date is in the future.' => 'Data inwentaryzacji jest z przyszłości.',
+    'The inventory is too old.' => 'Inwentaryzacja jest za stara.',
+    'The agent version is missing or unreadable.' => 'Brak wersji agenta lub nie da się jej odczytać.',
+    'The agent version is too old.' => 'Wersja agenta jest za stara.',
+    'The agent version is newer than allowed.' => 'Wersja agenta jest nowsza niż dopuszczalna.',
+    'The system category is missing or unknown.' => 'Brak kategorii systemu lub jest nierozpoznana.',
+    'The newest agent version is unknown.' => 'Nie znana jest najnowsza wersja agenta.',
+    'The matching signal file is missing.' => 'Brakuje pasującego pliku .signal.',
     'No "%s" file could be read from the archive.'
         => 'Nie udało się odczytać pliku "%s" z archiwum.',
     'The inventory date (var:general::date) is missing from the .cur file.'
@@ -50,10 +68,8 @@ return [
     'The scc.conf version (fix:general::scc.conf:version) is missing from the .cur file.'
         => 'Brak wersji scc.conf (fix:general::scc.conf:version) w pliku .cur.',
     'The scc.conf version "%s" could not be read.' => 'Nie udało się odczytać wersji scc.conf "%s".',
-    'The agent version %s is too old for %s - the minimum accepted version is %s.'
-        => 'Wersja agenta %s jest za stara dla %s – minimalna dopuszczalna wersja to %s.',
-    'The agent version %s is newer than allowed for %s - the maximum accepted version is %s.'
-        => 'Wersja agenta %s jest nowsza niż dopuszczalna dla %s – maksymalna dopuszczalna wersja to %s.',
+    'The agent version %s is too old for %s.' => 'Wersja agenta %s jest za stara dla %s.',
+    'The agent version %s is newer than allowed for %s.' => 'Wersja agenta %s jest nowsza niż dopuszczalna dla %s.',
     'The system category (fix:general::scc.conf:os_category) is missing from the .cur file.'
         => 'Brak kategorii systemu (fix:general::scc.conf:os_category) w pliku .cur.',
     'Unknown system category "%s" - expected one of: %s.'

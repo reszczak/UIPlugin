@@ -23,9 +23,21 @@ class PluginUploadsccglpiUploadPanel
         $this->check   = new PluginUploadsccglpiInventoryCheck($this->config);
     }
 
-    private static function reportRow(string $host, array $files, bool $ok, string $reason): array
+    private static function reportRow(string $host, array $files, bool $ok, string $reason, string $group = ''): array
     {
-        return ['host' => $host, 'files' => $files, 'ok' => $ok, 'reason' => $reason];
+        return [
+            'host'   => $host,
+            'files'  => $files,
+            'ok'     => $ok,
+            'reason' => $reason,
+            'group'  => $group !== '' ? $group : $reason,
+        ];
+    }
+
+    private static function exportUrl(): string
+    {
+        global $CFG_GLPI;
+        return ($CFG_GLPI['root_doc'] ?? '') . '/plugins/uploadsccglpi/front/upload.export.php';
     }
 
     private static function t(string $s): string
@@ -115,7 +127,7 @@ class PluginUploadsccglpiUploadPanel
 
             $reason = $this->check->check((string) $pair['archive']['upload']['tmp_name'], $pair['stem']);
             if ($reason !== '') {
-                $report[] = self::reportRow($pair['stem'], $files, false, $reason);
+                $report[] = self::reportRow($pair['stem'], $files, false, $reason, $this->check->lastGroup());
                 continue;
             }
 
@@ -126,7 +138,7 @@ class PluginUploadsccglpiUploadPanel
             }
         }
 
-        $_SESSION[self::REPORT_KEY] = $report;
+        $_SESSION[self::REPORT_KEY] = ['rows' => $report, 'shown' => false];
 
         if ($stored > 0) {
             Session::addMessageAfterRedirect(
@@ -148,8 +160,9 @@ class PluginUploadsccglpiUploadPanel
 
             $rejection = $this->storage->validate($upload);
             if ($rejection !== '') {
-                $report[] = self::reportRow($name, [$name], false, $rejection);
-                $rejected[mb_strtolower(PluginUploadsccglpiStorage::splitName($name, $known)['stem'])] = true;
+                $rejectedStem = PluginUploadsccglpiStorage::splitName($name, $known)['stem'];
+                $report[] = self::reportRow($rejectedStem, [$name], false, $rejection);
+                $rejected[mb_strtolower($rejectedStem)] = true;
                 continue;
             }
 
@@ -164,7 +177,7 @@ class PluginUploadsccglpiUploadPanel
 
             $key = mb_strtolower($stem);
             if (isset($groups[$key][$role])) {
-                $report[] = self::reportRow($name, [$name], false, sprintf(
+                $report[] = self::reportRow($stem, [$name], false, sprintf(
                     self::t('Two files of the same kind for one host - a pair is one archive and one %s file.'),
                     '.' . $signal
                 ));
@@ -195,7 +208,8 @@ class PluginUploadsccglpiUploadPanel
                     $stem,
                     [$group['archive']['name']],
                     false,
-                    sprintf(self::t('The matching "%s" file is missing.'), $stem . '.' . $signal)
+                    sprintf(self::t('The matching "%s" file is missing.'), $stem . '.' . $signal),
+                    self::t('The matching signal file is missing.')
                 );
                 continue;
             }
@@ -431,57 +445,114 @@ class PluginUploadsccglpiUploadPanel
 
     private function renderReport(): void
     {
-        $report = $_SESSION[self::REPORT_KEY] ?? [];
-        unset($_SESSION[self::REPORT_KEY]);
-
-        if (!is_array($report) || $report === []) {
+        $state = $_SESSION[self::REPORT_KEY] ?? null;
+        $rows  = is_array($state) ? ($state['rows'] ?? []) : [];
+        if (!is_array($rows) || $rows === []) {
             return;
         }
 
-        $loaded  = count(array_filter($report, static fn(array $r) => $r['ok']));
-        $refused = count($report) - $loaded;
+        $full = empty($state['shown']);
+        $_SESSION[self::REPORT_KEY]['shown'] = true;
+
+        $loadedRows = array_values(array_filter($rows, static fn(array $r) => $r['ok']));
+        $failedRows = array_values(array_filter($rows, static fn(array $r) => !$r['ok']));
+
+        $loadedBadge = "<span class='badge bg-green-lt'>"
+            . htmlescape(sprintf(self::t('loaded: %d'), count($loadedRows))) . "</span>";
+        $failedBadge = $failedRows === [] ? '' : "<span class='badge bg-red-lt'>"
+            . htmlescape(sprintf(self::t('refused: %d'), count($failedRows))) . "</span>";
+
+        $buttons = $this->exportButton(self::t('Download the full log of the last upload (.txt)'));
 
         $title = htmlescape(self::t('Result of the last upload'));
+
+        if (!$full) {
+            echo "<div class='card m-4'><div class='card-body py-2 d-flex align-items-center flex-wrap gap-2'>";
+            echo "<span class='fw-bold me-2'>{$title}</span>{$loadedBadge}{$failedBadge}";
+            echo "<span class='ms-auto d-flex gap-2 flex-wrap'>{$buttons}</span>";
+            echo "</div></div>";
+            return;
+        }
 
         echo "<div class='card m-4'>";
         echo "<div class='card-header d-flex justify-content-between align-items-center flex-wrap gap-2'>";
         echo "<h3 class='card-title mb-0'><i class='ti ti-clipboard-check me-2'></i>{$title}</h3>";
-        echo "<div class='d-flex gap-2'>";
-        echo "<span class='badge bg-green-lt'>" . htmlescape(sprintf(self::t('loaded: %d'), $loaded)) . "</span>";
-        if ($refused > 0) {
-            echo "<span class='badge bg-red-lt'>" . htmlescape(sprintf(self::t('refused: %d'), $refused)) . "</span>";
-        }
-        echo "</div></div>";
+        echo "<div class='d-flex gap-2 flex-wrap align-items-center'>{$loadedBadge}{$failedBadge}{$buttons}</div>";
+        echo "</div>";
         echo "<div class='card-body'>";
-        echo "<div class='table-responsive'><table class='table table-sm align-middle'>";
-        echo "<thead><tr>";
-        echo "<th>" . htmlescape(self::t('Host')) . "</th>";
-        echo "<th>" . htmlescape(self::t('Files')) . "</th>";
-        echo "<th>" . htmlescape(__('Status')) . "</th>";
-        echo "<th>" . htmlescape(self::t('Reason')) . "</th>";
-        echo "</tr></thead><tbody>";
 
-        foreach ($report as $row) {
-            $files = implode('<br>', array_map(
-                static fn(string $f) => '<code>' . htmlescape($f) . '</code>',
-                (array) $row['files']
-            ));
-            $status = $row['ok']
-                ? "<span class='badge bg-green-lt'><i class='ti ti-check me-1'></i>"
-                    . htmlescape(self::t('loaded')) . "</span>"
-                : "<span class='badge bg-red-lt'><i class='ti ti-x me-1'></i>"
-                    . htmlescape(self::t('not loaded')) . "</span>";
+        if ($failedRows !== []) {
+            $groups = [];
+            foreach ($failedRows as $row) {
+                $groups[(string) ($row['group'] ?? $row['reason'])][] = $row;
+            }
+            uasort($groups, static fn(array $a, array $b) => count($b) <=> count($a));
 
-            echo "<tr>";
-            echo "<td>" . htmlescape((string) $row['host']) . "</td>";
-            echo "<td>{$files}</td>";
-            echo "<td class='text-nowrap'>{$status}</td>";
-            echo "<td class='text-muted'>" . htmlescape((string) $row['reason']) . "</td>";
-            echo "</tr>";
+            echo "<h4 class='text-danger'><i class='ti ti-x me-1'></i>"
+                . htmlescape(self::t('Not loaded')) . "</h4>";
+            foreach ($groups as $group => $groupRows) {
+                $heading = htmlescape($group !== '' ? $group : self::t('Unknown reason.'))
+                    . " <span class='badge bg-red-lt ms-1'>" . count($groupRows) . "</span>";
+                echo "<details class='mb-2'" . (count($groups) === 1 ? ' open' : '') . ">";
+                echo "<summary class='fw-bold'>{$heading}</summary>";
+                echo $this->hostList($groupRows, true);
+                echo "</details>";
+            }
         }
 
-        echo "</tbody></table></div>";
+        if ($loadedRows !== []) {
+            $heading = htmlescape(self::t('Loaded'))
+                . " <span class='badge bg-green-lt ms-1'>" . count($loadedRows) . "</span>";
+            echo "<details class='mt-3'>";
+            echo "<summary class='fw-bold text-success'><i class='ti ti-check me-1'></i>{$heading}</summary>";
+            echo $this->hostList($loadedRows);
+            echo "</details>";
+        }
+
         echo "</div></div>";
+    }
+
+    private function exportButton(string $label): string
+    {
+        return "<a class='btn btn-sm btn-outline-secondary text-nowrap' href='"
+            . htmlescape(self::exportUrl()) . "'><i class='ti ti-download me-1'></i>"
+            . htmlescape($label) . "</a>";
+    }
+
+    private function hostList(array $rows, bool $withDetail = false): string
+    {
+        $html = "<ul class='list-unstyled mb-0 mt-2 ms-3' style='max-height:320px;overflow:auto'>";
+        foreach ($rows as $row) {
+            $detail = '';
+            if ($withDetail && (string) $row['reason'] !== (string) ($row['group'] ?? $row['reason'])) {
+                $detail = " <span class='text-muted small ms-2'>" . htmlescape((string) $row['reason']) . "</span>";
+            }
+            $html .= "<li>" . htmlescape((string) $row['host']) . $detail . "</li>";
+        }
+
+        return $html . "</ul>";
+    }
+
+    public static function exportReport(): void
+    {
+        $state = $_SESSION[self::REPORT_KEY] ?? null;
+        $rows  = is_array($state) ? ($state['rows'] ?? []) : [];
+
+        $clean = static fn(string $v): string => trim(preg_replace('/[\t\r\n]+/', ' ', $v));
+
+        $lines = [];
+        foreach ($rows as $row) {
+            $lines[] = implode("\t", [
+                $clean((string) $row['host']),
+                $row['ok'] ? 'OK' : 'ERROR',
+                $clean((string) $row['reason']),
+            ]);
+        }
+
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Content-Disposition: attachment; filename="upload_log_' . date('Ymd_His') . '.txt"');
+        header('X-Content-Type-Options: nosniff');
+        echo implode("\r\n", $lines) . ($lines === [] ? '' : "\r\n");
     }
 
     private static function listLimit(): int
@@ -522,13 +593,31 @@ class PluginUploadsccglpiUploadPanel
             echo "</div>";
             echo $this->suggestScript($self);
         }
+        $range = PluginUploadsccglpiUploadedFile::dateRange();
+        echo "<span class='d-flex align-items-center gap-2 text-nowrap'>";
+        echo "<label class='form-label mb-0 text-muted small' for='uploadsccglpi_list_from'>"
+            . htmlescape(self::t('From')) . "</label>";
+        echo "<input type='date' id='uploadsccglpi_list_from' name='list_from' class='form-control form-control-sm w-auto' "
+            . "value='" . htmlescape($range['from']) . "'></span>";
+        echo "<span class='d-flex align-items-center gap-2 text-nowrap'>";
+        echo "<label class='form-label mb-0 text-muted small' for='uploadsccglpi_list_to'>"
+            . htmlescape(self::t('To')) . "</label>";
+        echo "<input type='date' id='uploadsccglpi_list_to' name='list_to' class='form-control form-control-sm w-auto' "
+            . "value='" . htmlescape($range['to']) . "'></span>";
+        echo "<button type='submit' class='btn btn-sm btn-outline-primary'><i class='ti ti-filter me-1'></i>"
+            . htmlescape(self::t('Filter')) . "</button>";
+        if ($range['from'] !== '' || $range['to'] !== '') {
+            echo "<a href='" . htmlescape($self . '?list_from=&list_to=') . "' class='btn btn-sm btn-outline-secondary'>"
+                . htmlescape(self::t('Clear dates')) . "</a>";
+        }
+        echo "<span class='d-flex align-items-center gap-2 text-nowrap'>";
         echo "<label class='form-label mb-0 text-muted small' for='uploadsccglpi_list_limit'>{$label}</label>";
         echo "<select id='uploadsccglpi_list_limit' name='list_limit' class='form-select form-select-sm w-auto' "
             . "onchange=\"if (this.form.list_user_search) { this.form.list_user_search.value = ''; } this.form.submit()\">";
         foreach (self::LIST_LIMITS as $option) {
             echo "<option value='{$option}'" . ($option === $limit ? ' selected' : '') . ">{$option}</option>";
         }
-        echo "</select><noscript><button type='submit' class='btn btn-sm btn-outline-secondary'>OK</button></noscript>";
+        echo "</select></span><noscript><button type='submit' class='btn btn-sm btn-outline-secondary'>OK</button></noscript>";
         echo "</form>";
     }
 
@@ -673,6 +762,12 @@ JS;
         if (isset($_GET['list_scope'])) {
             PluginUploadsccglpiUploadedFile::setListScope((string) $_GET['list_scope']);
         }
+        if (isset($_GET['list_from']) || isset($_GET['list_to'])) {
+            PluginUploadsccglpiUploadedFile::setDateRange(
+                (string) ($_GET['list_from'] ?? ''),
+                (string) ($_GET['list_to'] ?? '')
+            );
+        }
         $this->searchUsers();
         $limit = self::listLimit();
         $pairs = PluginUploadsccglpiUploadedFile::findVisiblePairs($limit);
@@ -689,19 +784,22 @@ JS;
 
         echo "<div class='card m-4'>";
         echo "<div class='card-header d-flex justify-content-between align-items-center flex-wrap gap-2'>";
-        echo "<div><h3 class='card-title mb-0'><i class='ti ti-files me-2'></i>{$title}</h3>";
+        echo "<div><h3 class='card-title mb-0'><i class='ti ti-files me-2'></i>{$title}"
+            . " <span class='badge bg-blue-lt fs-6 ms-1'>" . htmlescape((string) $total) . "</span></h3>";
         echo "<div class='text-muted small'>{$scope}</div></div>";
         echo "<div class='d-flex align-items-center gap-3'>";
         $this->renderLimitSelect($self, $limit);
-        echo "<span class='badge bg-secondary'>" . htmlescape((string) $total) . "</span>";
         echo "</div>";
         echo "</div>";
         echo "<div class='card-body'>";
         $this->renderUserMatches($self);
 
         if ($pairs === []) {
+            $range = PluginUploadsccglpiUploadedFile::dateRange();
+            $filtered = $range['from'] !== '' || $range['to'] !== '';
             echo "<p class='text-muted mb-0'>"
-                . htmlescape(self::t('No file has been uploaded yet.')) . "</p>";
+                . htmlescape($filtered ? self::t('No entries in the selected date range.') : self::t('No file has been uploaded yet.'))
+                . "</p>";
         } else {
             $this->renderTable($pairs, $self);
             if ($total > count($pairs)) {

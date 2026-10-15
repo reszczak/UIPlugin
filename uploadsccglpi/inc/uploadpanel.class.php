@@ -510,7 +510,9 @@ class PluginUploadsccglpiUploadPanel
         }
 
         header('Content-Type: text/plain; charset=utf-8');
-        header('Content-Disposition: attachment; filename="upload_log_' . date('Ymd_His') . '.txt"');
+        $uploaded = strtotime((string) ($state['date'] ?? ''));
+        $stamp    = date('Ymd_His', $uploaded !== false ? $uploaded : time());
+        header('Content-Disposition: attachment; filename="upload_log_' . $stamp . '.txt"');
         header('X-Content-Type-Options: nosniff');
         echo implode("\r\n", $lines) . ($lines === [] ? '' : "\r\n");
     }

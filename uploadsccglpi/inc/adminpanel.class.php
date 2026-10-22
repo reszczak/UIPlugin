@@ -68,6 +68,8 @@ class PluginUploadsccglpiAdminPanel
         self::field('max_age_days', self::t('Maximum inventory age (days)'), (string) $config->maxAgeDays(), 'number', "min='1' max='3650'", self::t('Counted from the inventory date in the .cur file.'));
         self::field('version_max_gap', self::t('Maximum version gap'), (string) $config->versionMaxGap(), 'number', "min='1' max='999'", self::t('Counted from the newest version in the knowledge base; with 3, the newest and the two previous ones are accepted.'));
 
+        self::field('help_article_id', self::t('Instruction article (knowledge base ID)'), $config->helpArticleId() > 0 ? (string) $config->helpArticleId() : '', 'number', "min='1'", self::t('Optional. The "How to upload a file?" button on the upload page opens this article; leave empty to hide the button.'), false);
+
         echo "<button type='submit' name='save' value='1' class='btn btn-primary'>"
             . "<i class='ti ti-device-floppy me-1'></i>" . htmlescape(__('Save')) . "</button>";
         echo plugin_uploadsccglpi_csrf_field();
@@ -76,7 +78,7 @@ class PluginUploadsccglpiAdminPanel
         echo "</div></div>";
     }
 
-    private static function field(string $name, string $label, string $value, string $type, string $attributes, string $help): void
+    private static function field(string $name, string $label, string $value, string $type, string $attributes, string $help, bool $required = true): void
     {
         $id    = 'uploadsccglpi_' . $name;
         $width = $type === 'number' ? '160px' : '320px';
@@ -84,7 +86,7 @@ class PluginUploadsccglpiAdminPanel
         echo "<div class='mb-3'>";
         echo "<label class='form-label' for='{$id}'>" . htmlescape($label) . "</label>";
         echo "<input type='{$type}' class='form-control' id='{$id}' name='{$name}' "
-            . "value='" . htmlescape($value) . "' {$attributes} style='max-width:{$width}' required>";
+            . "value='" . htmlescape($value) . "' {$attributes} style='max-width:{$width}'" . ($required ? ' required' : '') . ">";
         echo "<div class='form-text'>" . htmlescape($help) . "</div>";
         echo "</div>";
     }

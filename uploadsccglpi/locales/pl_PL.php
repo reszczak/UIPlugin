@@ -81,6 +81,9 @@ return [
         => 'Możesz wybrać maksymalnie %d hostów naraz (archiwa: %s). Opcjonalnie możesz dodać także plik %s dla każdego hosta.',
     'No newest agent version is known for %s - the "%s" knowledge base article could not be read. Contact your GLPI administrator.'
         => 'Nie jest znana najnowsza wersja agenta dla %s – nie udało się odczytać wpisu bazy wiedzy „%s". Skontaktuj się z administratorem GLPI.',
+    'How to upload a file?' => 'Jak wgrać plik?',
+    'Instruction article (knowledge base ID)' => 'Artykuł z instrukcją (ID w bazie wiedzy)',
+    'Optional. The "How to upload a file?" button on the upload page opens this article; leave empty to hide the button.' => 'Opcjonalne. Przycisk „Jak wgrać plik?” na stronie wgrywania otwiera ten artykuł; zostaw puste, aby ukryć przycisk.',
     'Maximum version gap' => 'Maksymalna różnica wersji',
     'Newest' => 'Najnowsza',
     'Configuration' => 'Konfiguracja',

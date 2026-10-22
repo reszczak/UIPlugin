@@ -333,7 +333,10 @@ class PluginUploadsccglpiUploadPanel
         echo "<div class='card m-4'>";
         echo "<div class='card-header d-flex justify-content-between align-items-center flex-wrap gap-2'>"
             . "<h3 class='card-title mb-0'><i class='ti ti-cloud-upload me-2'></i>{$title}</h3>";
+        echo "<div class='d-flex gap-2'>";
+        $this->renderHelpButton();
         $this->renderSettingsButton();
+        echo "</div>";
         echo "</div>";
         echo "<div class='card-body'>";
         echo "<p class='text-muted'>{$intro}</p>";
@@ -356,6 +359,20 @@ class PluginUploadsccglpiUploadPanel
         }
 
         echo "</div></div>";
+    }
+
+    private function renderHelpButton(): void
+    {
+        global $CFG_GLPI;
+
+        $id = $this->config->helpArticleId();
+        if ($id <= 0) {
+            return;
+        }
+
+        $url = ($CFG_GLPI['root_doc'] ?? '') . '/front/knowbaseitem.form.php?id=' . $id;
+        echo "<a href='" . htmlescape($url) . "' target='_blank' rel='noopener' class='btn btn-outline-primary btn-sm'>"
+            . "<i class='ti ti-book me-1'></i>" . htmlescape(self::t('How to upload a file?')) . "</a>";
     }
 
     private function renderSettingsButton(): void

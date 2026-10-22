@@ -10,6 +10,7 @@ class PluginUploadsccglpiConfig
         'max_files'          => '100',
         'version_max_gap'    => '3',
         'max_age_days'       => '7',
+        'help_article_id'    => '',
     ];
 
     public const OBSOLETE_KEYS = ['storage_dir', 'allowed_extensions', 'newest_version'];
@@ -125,6 +126,11 @@ class PluginUploadsccglpiConfig
         return max(1, (int) $this->value('max_age_days'));
     }
 
+    public function helpArticleId(): int
+    {
+        return max(0, (int) $this->value('help_article_id'));
+    }
+
     public static function isVersion(string $value): bool
     {
         return preg_match('/^\d{1,6}(\.\d{1,6}){0,4}$/', trim($value)) === 1;
@@ -169,6 +175,13 @@ class PluginUploadsccglpiConfig
             }
             $values[$key] = (string) min($max, max($min, $number));
         }
+
+        $help = trim((string) ($input['help_article_id'] ?? ''));
+        if ($help !== '' && (preg_match('/^\d{1,9}$/', $help) !== 1 || !(new KnowbaseItem())->getFromDB((int) $help))) {
+            $adjusted[] = 'help_article_id';
+            $help = '';
+        }
+        $values['help_article_id'] = $help === '' ? '' : (string) (int) $help;
 
         Config::setConfigurationValues(self::CONTEXT, $values);
         $this->values = array_merge($this->values, $values);

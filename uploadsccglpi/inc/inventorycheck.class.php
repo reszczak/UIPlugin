@@ -56,7 +56,36 @@ class PluginUploadsccglpiInventoryCheck
             return $reason;
         }
 
-        return $this->checkHostAccess($content, $stem);
+        $reason = $this->checkHostAccess($content, $stem);
+        if ($reason !== '') {
+            return $reason;
+        }
+
+        return $this->checkNotOlderThanKnown($content, $stem);
+    }
+
+    private function checkNotOlderThanKnown(string $content, string $stem): string
+    {
+        $uuid = self::hostUuid($content, $stem);
+        if ($uuid === '' || preg_match(self::DATE_PATTERN, $content, $m) !== 1) {
+            return '';
+        }
+
+        $timestamp = strtotime(trim($m[1]));
+        if ($timestamp === false) {
+            return '';
+        }
+
+        $known = PluginUploadsccglpiUploadedFile::lastScanDate($uuid);
+        $day   = date('Y-m-d', $timestamp);
+        if ($known === null || $day >= $known) {
+            return '';
+        }
+
+        return $this->reject(
+            sprintf(self::t('The inventory date %s is older than the last known one for this host (%s).'), $day, $known),
+            self::t('The inventory is older than the one already stored.')
+        );
     }
 
     private function checkHostAccess(string $content, string $stem): string

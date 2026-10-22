@@ -49,6 +49,7 @@ return [
     'Loaded' => 'Załadowane',
     'The inventory date is missing or unreadable.' => 'Brak daty inwentaryzacji lub nie da się jej odczytać.',
     'The inventory date is in the future.' => 'Data inwentaryzacji jest z przyszłości.',
+    'The inventory is older than the one already stored.' => 'Inwentaryzacja jest starsza niż ta już zapisana.',
     'The inventory is too old.' => 'Inwentaryzacja jest za stara.',
     'The agent version is missing or unreadable.' => 'Brak wersji agenta lub nie da się jej odczytać.',
     'The agent version is too old.' => 'Wersja agenta jest za stara.',
@@ -123,6 +124,7 @@ return [
         => 'Nie udało się ustalić UUID hosta ani z pliku .cur, ani z nazwy pliku.',
     'You do not have permission to the IT system of this host.'
         => 'Nie masz uprawnień do systemu informatycznego tego hosta.',
+    'The inventory date %s is older than the last known one for this host (%s).' => 'Data inwentaryzacji %s jest starsza niż ostatnia znana dla tego hosta (%s).',
     'The inventory date %s is in the future.' => 'Data inwentaryzacji %s jest z przyszłości.',
     'Article "%s" not found and no earlier version is saved.' => 'Nie znaleziono wpisu „%s" i nie zapisano żadnej wcześniejszej wersji.',
     'Some values were invalid or out of range and were adjusted - check the form.' => 'Część wartości była nieprawidłowa lub spoza zakresu i została skorygowana – sprawdź formularz.',

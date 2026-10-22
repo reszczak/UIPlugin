@@ -71,7 +71,7 @@ class PluginUploadsccglpiUploadPanel
     {
         if (isset($_POST['upload'])) {
             if (!PluginUploadsccglpiUploadedFile::canUpload()) {
-                Html::displayRightError();
+                throw new \Glpi\Exception\Http\AccessDeniedHttpException();
             }
             $this->handleUpload();
             Html::redirect($self);
@@ -79,7 +79,7 @@ class PluginUploadsccglpiUploadPanel
 
         if (isset($_POST['delete'])) {
             if (!PluginUploadsccglpiUploadedFile::canPurge()) {
-                Html::displayRightError();
+                throw new \Glpi\Exception\Http\AccessDeniedHttpException();
             }
             $this->handleDelete((int) $_POST['delete']);
             Html::redirect($self);
@@ -236,7 +236,7 @@ class PluginUploadsccglpiUploadPanel
             return $item->add([
                 'entities_id'   => (int) ($_SESSION['glpiactive_entity'] ?? 0),
                 'is_recursive'  => 0,
-                'name'          => $result['name'],
+                'name'          => mb_substr((string) $result['name'], 0, 255),
                 'filename'      => $result['filename'],
                 'filepath'      => $result['filepath'],
                 'storage_dir'   => $result['storage_dir'],
@@ -351,7 +351,7 @@ class PluginUploadsccglpiUploadPanel
                 . "name='upload_files[]' accept='{$acceptH}' aria-label='{$label}' multiple required>";
             echo "<button type='submit' name='upload' value='1' class='btn btn-primary text-nowrap'>"
                 . "<i class='ti ti-upload me-1'></i>{$submit}</button>";
-            echo Html::hidden('_glpi_csrf_token', ['value' => Session::getNewCSRFToken()]);
+            echo plugin_uploadsccglpi_csrf_field();
             echo "</form>";
         }
 
@@ -799,7 +799,7 @@ JS;
         }
 
         echo "</tbody></table></div>";
-        echo Html::hidden('_glpi_csrf_token', ['value' => Session::getNewCSRFToken()]);
+        echo plugin_uploadsccglpi_csrf_field();
         echo "</form>";
     }
 

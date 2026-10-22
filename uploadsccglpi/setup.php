@@ -2,7 +2,7 @@
 
 define('PLUGIN_UPLOADSCCGLPI_VERSION', '1.0.0');
 define('PLUGIN_UPLOADSCCGLPI_MIN_GLPI', '11.0.0');
-define('PLUGIN_UPLOADSCCGLPI_MAX_GLPI', '11.99.99');
+define('PLUGIN_UPLOADSCCGLPI_MAX_GLPI', '12.99.99');
 define('PLUGIN_UPLOADSCCGLPI_TABLE', 'glpi_plugin_uploadsccglpi_uploadedfiles');
 define('PLUGIN_UPLOADSCCGLPI_VERSIONS_TABLE', 'glpi_plugin_uploadsccglpi_agentversions');
 define('PLUGIN_UPLOADSCCGLPI_HISTORY_TABLE', 'glpi_plugin_uploadsccglpi_agentversionhistory');
@@ -72,4 +72,12 @@ function plugin_uploadsccglpi_check_prerequisites(): bool
 function plugin_uploadsccglpi_check_config(): bool
 {
     return true;
+}
+
+function plugin_uploadsccglpi_csrf_field(): string
+{
+    if (version_compare(GLPI_VERSION, '12.0.0', '>=')) {
+        return '';
+    }
+    return Html::hidden('_glpi_csrf_token', ['value' => Session::getNewCSRFToken()]);
 }

@@ -196,6 +196,7 @@ class PluginUploadsccglpiStorage
     public function freeStemForPair(string $stem, array $extensions): string
     {
         $stem = self::sanitizeName($stem);
+        $stem = mb_substr($stem, 0, 150);
         if ($stem === '') {
             $stem = 'upload';
         }

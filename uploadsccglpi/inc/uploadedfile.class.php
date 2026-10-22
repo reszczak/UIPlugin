@@ -1,8 +1,19 @@
 <?php
 
-class PluginUploadsccglpiUploadedFile extends CommonDBTM
+if (version_compare(GLPI_VERSION, '12.0.0', '>=')) {
+    abstract class PluginUploadsccglpiRightnameBase extends CommonDBTM
+    {
+        public static string $rightname = 'document';
+    }
+} else {
+    abstract class PluginUploadsccglpiRightnameBase extends CommonDBTM
+    {
+        public static $rightname = 'document';
+    }
+}
+
+class PluginUploadsccglpiUploadedFile extends PluginUploadsccglpiRightnameBase
 {
-    public static $rightname = 'document';
 
     public const SCOPE_ALL = 'all';
 
@@ -68,6 +79,47 @@ class PluginUploadsccglpiUploadedFile extends CommonDBTM
         }
 
         return $entities;
+    }
+
+    public static function lastScanDate(string $uuid): ?string
+    {
+        global $DB;
+
+        $table = 'glpi_plugin_fields_computerhostfields';
+        if (!$DB->tableExists($table) || !$DB->fieldExists($table, 'scandatefield')) {
+            return null;
+        }
+
+        $latest = null;
+        foreach ($DB->request([
+            'SELECT'     => ['f.scandatefield'],
+            'FROM'       => Computer::getTable() . ' AS c',
+            'INNER JOIN' => [
+                $table . ' AS f' => [
+                    'ON' => [
+                        'f' => 'items_id',
+                        'c' => 'id',
+                        ['AND' => ['f.itemtype' => 'Computer']],
+                    ],
+                ],
+            ],
+            'WHERE'      => [
+                'c.uuid'        => $uuid,
+                'c.is_deleted'  => 0,
+                'c.is_template' => 0,
+            ],
+        ]) as $row) {
+            $timestamp = strtotime(trim((string) $row['scandatefield']));
+            if ($timestamp === false) {
+                continue;
+            }
+            $day = date('Y-m-d', $timestamp);
+            if ($latest === null || $day > $latest) {
+                $latest = $day;
+            }
+        }
+
+        return $latest;
     }
 
     public static function canSeeEveryUpload(): bool

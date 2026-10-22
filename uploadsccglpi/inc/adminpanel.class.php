@@ -70,7 +70,7 @@ class PluginUploadsccglpiAdminPanel
 
         echo "<button type='submit' name='save' value='1' class='btn btn-primary'>"
             . "<i class='ti ti-device-floppy me-1'></i>" . htmlescape(__('Save')) . "</button>";
-        echo Html::hidden('_glpi_csrf_token', ['value' => Session::getNewCSRFToken()]);
+        echo plugin_uploadsccglpi_csrf_field();
         echo "</form>";
 
         echo "</div></div>";

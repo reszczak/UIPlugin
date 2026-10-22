@@ -1,0 +1,80 @@
+<p>Strona <strong>Upload</strong> służy do wgrywania archiwów inwentaryzacji (jedno archiwum to jeden host). Każde archiwum jest sprawdzane osobno: błędny host jest odrzucany z podaniem powodu, a reszta paczki przechodzi normalnie. Potrzebujesz uprawnienia <em>Dokumenty → Odczyt</em>.</p>
+
+<h2>Jak wgrać plik</h2>
+<ol>
+<li>Wybierz <strong>Upload → Upload</strong> w menu bocznym.
+<p><em>[ZDJĘCIE 1: menu boczne z zaznaczoną pozycją „Upload".]</em></p></li>
+<li>Kliknij <strong>Wybierz pliki</strong> i wskaż archiwa <code>.tar.gz</code> / <code>.gz</code> (opcjonalnie też pliki <code>.signal</code> o tej samej nazwie). Następnie kliknij <strong>Upload</strong>.
+<p><em>[ZDJĘCIE 2: formularz „Wgraj plik" z wybranymi plikami.]</em></p></li>
+<li>W panelu <strong>Wynik ostatniego wgrania</strong> sprawdź liczby „załadowane" i „odrzucone". Powody odrzuceń są w sekcji <strong>Niezaładowane</strong>.
+<p><em>[ZDJĘCIE 3: panel wyniku z rozwiniętą sekcją „Niezaładowane" i kilkoma powodami.]</em></p></li>
+<li>Pełny raport pobierzesz przyciskiem <strong>Pobierz pełny log ostatniego wgrania (.txt)</strong>. Historię wgrań widzisz w <strong>Rejestrze wgrań</strong>.
+<p><em>[ZDJĘCIE 4: przycisk pobrania logu i Rejestr wgrań.]</em></p></li>
+</ol>
+<p><strong>Nazwa pliku:</strong> <code>nazwa_hosta.tar.gz</code>. Opcjonalnie <code>nazwa_hosta@UUID.tar.gz</code> (UUID po znaku <code>@</code> jest używany, gdy nie da się go odczytać z archiwum). Plik <code>.signal</code> musi mieć dokładnie tę samą nazwę co archiwum.</p>
+
+<h2>Jakie warunki są sprawdzane</h2>
+<p>Archiwum jest zapisane tylko wtedy, gdy spełnia <strong>wszystkie</strong> warunki. Limity to wartości domyślne; aktualne widzisz nad formularzem.</p>
+<table border="1" cellpadding="6" cellspacing="0">
+<thead><tr><th>Obszar</th><th>Warunek</th></tr></thead>
+<tbody>
+<tr><td rowspan="4">Plik</td><td>Rozszerzenie <code>.tar.gz</code>, <code>.gz</code> (lub <code>.signal</code>), plik niepusty, do 64 MB, wysłany w całości.</td></tr>
+<tr><td>Najwyżej 100 hostów w jednym wgraniu.</td></tr>
+<tr><td>Jedno archiwum na hosta (bez duplikatów nazw).</td></tr>
+<tr><td>Każdy <code>.signal</code> ma archiwum o tej samej nazwie.</td></tr>
+<tr><td rowspan="6">Zawartość</td><td>Archiwum da się odczytać i zawiera plik inwentaryzacji.</td></tr>
+<tr><td>Data inwentaryzacji jest podana, nie jest z przyszłości i nie jest starsza niż 7 dni.</td></tr>
+<tr><td>Data nie jest starsza niż ostatnia zapisana dla tego komputera (SCAN_DATE). Ten sam dzień lub nowsza przechodzi.</td></tr>
+<tr><td>Kategoria systemu jest znana: Linux, Windows, HPUX, SunOS lub AIX.</td></tr>
+<tr><td>Wersja agenta mieści się w zakresie: najnowsza z artykułu „Agent SCC - wersja" ±2 (osobno Linux/Unix i Windows). Zakres widzisz nad formularzem.</td></tr>
+<tr><td>Da się ustalić UUID hosta. Jeśli komputer o tym UUID jest w GLPI, musisz mieć dostęp do jego jednostki (nieznany komputer jest przyjmowany).</td></tr>
+<tr><td>Serwer</td><td>Katalog docelowy jest zapisywalny, a wpis da się zarejestrować w bazie (zależy od administratora).</td></tr>
+</tbody>
+</table>
+
+<h2>Jak postępować w przypadku błędu</h2>
+<p>Znajdź komunikat w tabeli. Przy „zgłoś administratorowi" dołącz pełny log ostatniego wgrania. Po błędzie wgraj ponownie tylko odrzucone hosty.</p>
+
+<h3>Plik</h3>
+<table border="1" cellpadding="6" cellspacing="0">
+<thead><tr><th>Komunikat</th><th>Co zrobić</th></tr></thead>
+<tbody>
+<tr><td>Za dużo hostów w jednym wgraniu (limit: N)</td><td>Nic nie zostało wgrane. Podziel pliki na mniejsze paczki.</td></tr>
+<tr><td>Nierozpoznane rozszerzenie / Akceptowane są wyłącznie rozszerzenia…</td><td>Wgraj archiwum <code>.tar.gz</code> lub <code>.gz</code>.</td></tr>
+<tr><td>Plik jest pusty</td><td>Wygeneruj archiwum ponownie na hoście.</td></tr>
+<tr><td>Plik przekracza maksymalny dozwolony rozmiar</td><td>Sprawdź, czy to właściwy plik. Jeśli tak, zgłoś administratorowi potrzebę zwiększenia limitu.</td></tr>
+<tr><td>Plik został wysłany tylko częściowo / nie dotarł na serwer</td><td>Wgraj ponownie. Przy powtórzeniu zgłoś administratorowi.</td></tr>
+<tr><td>Dwa archiwa dla jednego hosta</td><td>Zostaw jedno archiwum na hosta.</td></tr>
+<tr><td>Brakuje archiwum dla tego hosta</td><td>Dodaj archiwum o tej samej nazwie co <code>.signal</code> albo usuń <code>.signal</code>.</td></tr>
+<tr><td>PHP ogranicza liczbę plików na żądanie… (ostrzeżenie)</td><td>Serwer mógł pominąć nadmiarowe pliki. Porównaj liczbę wgranych z wybranymi i resztę wgraj osobno.</td></tr>
+</tbody>
+</table>
+
+<h3>Zawartość archiwum</h3>
+<table border="1" cellpadding="6" cellspacing="0">
+<thead><tr><th>Komunikat</th><th>Co zrobić</th></tr></thead>
+<tbody>
+<tr><td>Nie udało się odczytać pliku „.cur" z archiwum</td><td>Archiwum uszkodzone lub bez inwentaryzacji. Wygeneruj ponownie.</td></tr>
+<tr><td>Brak daty inwentaryzacji / Nie udało się jej odczytać</td><td>Wygeneruj inwentaryzację ponownie. Przy powtórzeniu zgłoś administratorowi.</td></tr>
+<tr><td>Data inwentaryzacji … jest z przyszłości</td><td>Popraw czas lub strefę czasową na hoście i wygeneruj ponownie.</td></tr>
+<tr><td>Inwentaryzacja jest z …, czyli starsza niż dopuszczalne N dni</td><td>Wygeneruj <strong>nową</strong> inwentaryzację. Starej nie da się wgrać.</td></tr>
+<tr><td>Data inwentaryzacji … jest starsza niż ostatnia znana dla tego hosta (…)</td><td>W GLPI jest już nowsza inwentaryzacja tego komputera. Nie wgrywaj tego archiwum. Jeśli zapisana data wygląda na błędną, zgłoś administratorowi.</td></tr>
+<tr><td>Brak wersji scc.conf / Nie udało się jej odczytać</td><td>Sprawdź agenta na hoście i wygeneruj ponownie.</td></tr>
+<tr><td>Brak kategorii systemu / Nierozpoznana kategoria systemu</td><td>Wygeneruj ponownie. Jeśli system nie jest na liście obsługiwanych, zgłoś administratorowi.</td></tr>
+<tr><td>Wersja agenta … jest za stara</td><td>Zaktualizuj agenta do co najmniej minimalnej wersji (widać nad formularzem), wygeneruj i wgraj ponownie.</td></tr>
+<tr><td>Wersja agenta … jest nowsza niż dopuszczalna</td><td>Zgłoś administratorowi. Prawdopodobnie trzeba zaktualizować artykuł „Agent SCC - wersja".</td></tr>
+<tr><td>Nie jest znana najnowsza wersja agenta… / Nie znaleziono wpisu „Agent SCC - wersja"</td><td>Zgłoś administratorowi. Po naprawie wgraj ponownie.</td></tr>
+<tr><td>Nie udało się ustalić UUID hosta…</td><td>Nazwij archiwum <code>nazwa@UUID.tar.gz</code> i wgraj ponownie.</td></tr>
+<tr><td>Nie masz uprawnień do systemu informatycznego tego hosta</td><td>Sprawdź UUID i czy to Twój host. Jeśli tak, poproś administratora o dostęp do jednostki.</td></tr>
+</tbody>
+</table>
+
+<h3>Serwer i uprawnienia</h3>
+<table border="1" cellpadding="6" cellspacing="0">
+<thead><tr><th>Komunikat</th><th>Co zrobić</th></tr></thead>
+<tbody>
+<tr><td>Katalog docelowy nie istnieje lub nie ma prawa zapisu</td><td>Zgłoś administratorowi. Po naprawie wgraj ponownie.</td></tr>
+<tr><td>Nie udało się zarejestrować pliku w bazie danych</td><td>Spróbuj jeszcze raz. Przy powtórzeniu zgłoś administratorowi.</td></tr>
+<tr><td>Nie masz uprawnień do wgrywania plików</td><td>Poproś administratora o uprawnienie <em>Dokumenty → Odczyt</em>.</td></tr>
+</tbody>
+</table>
